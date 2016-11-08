@@ -1,0 +1,17 @@
+0;Red;nonleaf
+0-0;Coyote,Wolf;nonleaf
+0-0-0;Cat;nonleaf
+0-0-0-0;snoopy;leaf
+0-0-0-1;fat,orange;nonleaf
+0-0-0-1-0;tom;leaf
+0-0-0-1-1;garfield;leaf
+0-0-1;big,bad,evil,mean;nonleaf
+0-0-1-0;Wolf Blitzer;leaf
+0-0-1-1;ACME;nonleaf
+0-0-1-1-0;Big Bad Wolf;leaf
+0-0-1-1-1;Wile E. Coyote;leaf
+0-1;Dog;nonleaf
+0-1-0;plumber;nonleaf
+0-1-0-0;Little Red Riding Hood;leaf
+0-1-0-1;Mario;leaf
+0-1-1;Clifford;leaf
