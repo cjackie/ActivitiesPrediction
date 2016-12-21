@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PhoneAndWatch</string>
+    <string name="hello_round">accelerometer</string>
+    <string name="hello_square">accelerometer</string>
+</resources>
