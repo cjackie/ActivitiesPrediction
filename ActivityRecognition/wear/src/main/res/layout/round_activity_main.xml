@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.luyu.phoneandwatch.MainActivity"
+    tools:deviceIds="wear_round">
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/hello_round"
+        android:layout_above="@+id/textX"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="30dp" />
+    <TextView
+        android:id="@+id/textX"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="x: "
+        android:layout_centerVertical="true"
+        android:layout_alignStart="@+id/text" />
+    <TextView
+        android:id="@+id/textY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="y: "
+        android:layout_below="@+id/textX"
+        android:layout_alignStart="@+id/textX" />
+    <TextView
+        android:id="@+id/textZ"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="z: "
+        android:layout_below="@+id/textY"
+        android:layout_alignStart="@+id/textY" />
+
+
+</RelativeLayout>

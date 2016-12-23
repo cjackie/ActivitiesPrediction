@@ -16,21 +16,28 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
-public class MainActivity extends Activity implements SensorEventListener{
+public class MainActivity extends Activity implements SensorEventListener {
+
+    final static String TAG = "ACTIVITY_RECOGNITION";
 
     private GoogleApiClient mGoogleApiClient;
     private TextView mTextView;
-    private SensorManager sensorManager;
-    private Sensor gyro;
-    private PutDataMapRequest sensorData;
+    private SensorManager mSensorManager;
+    private Sensor mAccelerameter;
     private static final String SENSOR_DATA_PATH = "/sensor-data";
     private TextView textX, textY, textZ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .build();
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mAccelerameter = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
+        setContentView(R.layout.activity_main);
         final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
         stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
             @Override
@@ -39,37 +46,30 @@ public class MainActivity extends Activity implements SensorEventListener{
                 textX = (TextView)stub.findViewById(R.id.textX);
                 textY = (TextView)stub.findViewById(R.id.textY);
                 textZ = (TextView)stub.findViewById(R.id.textZ);
-                getSensorData();
             }
         });
-        Log.d("MainActivity", "execute on create ");
+    }
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Wearable.API)
-                .build();
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "on resume");
+        super.onResume();
         mGoogleApiClient.connect();
-
+        mSensorManager.registerListener(this, mAccelerameter, mSensorManager.SENSOR_DELAY_NORMAL);
     }
 
-    public void getSensorData() {
-
-        Log.d("MainActivity", "execute on resume ");
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        gyro = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sensorManager.registerListener(this, gyro,
-                SensorManager.SENSOR_DELAY_NORMAL);
-
-    }
-
+    @Override
     protected void onPause() {
-        Log.d("MainActivity", "execute on pause ");
+        Log.d(TAG, "execute on pause ");
         super.onPause();
-        sensorManager.unregisterListener(this);
+        mGoogleApiClient.disconnect();
+        mSensorManager.unregisterListener(this);
+
     }
 
     public void onSensorChanged(SensorEvent event) {
         String key = event.sensor.getName();
-        Log.d("MainActivity", "New reading for sensor: "+key);
+        Log.d(TAG, "New reading for sensor: "+key);
 
         float[] values = new float[3];
 
@@ -78,13 +78,13 @@ public class MainActivity extends Activity implements SensorEventListener{
         values[2] = event.values[2];
 
 
-        Log.d("MainActivity", "get values: "+values[0]+" "+values[1]+" "+values[2]);
+//        Log.d(TAG, "get values: "+values[0]+" "+values[1]+" "+values[2]);
 
         textX.setText(" "+values[0]);
         textY.setText(" "+values[1]);
         textZ.setText(" "+values[2]);
 
-        sensorData = PutDataMapRequest.create(SENSOR_DATA_PATH);
+        PutDataMapRequest sensorData = PutDataMapRequest.create(SENSOR_DATA_PATH);
         sensorData.getDataMap().putFloatArray("accelerometer", values);
         sensorData.getDataMap().putInt(key + " Accuracy", event.accuracy);
 

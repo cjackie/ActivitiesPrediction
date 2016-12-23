@@ -6,7 +6,7 @@ android {
     buildToolsVersion "24.0.2"
 
     defaultConfig {
-        applicationId "com.example.luyu.phoneandwatch"
+        applicationId "stonybrook.ese.seniordesign.activityrecognition"
         minSdkVersion 21
         targetSdkVersion 24
         versionCode 1
@@ -22,8 +22,6 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.google.android.support:wearable:2.0.0-alpha2'
-    compile 'com.google.android.gms:play-services-wearable:9.4.0'
-    // Required -- JUnit 4 framework
-    testCompile 'junit:junit:4.12'
+    compile 'com.google.android.support:wearable:2.0.0-beta1'
+    compile 'com.google.android.gms:play-services-wearable:10.0.1'
 }
