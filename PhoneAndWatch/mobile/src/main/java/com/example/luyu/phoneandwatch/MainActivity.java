@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Set;
 
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity implements
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
                 .build();
 
 
@@ -57,15 +60,18 @@ public class MainActivity extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
         mGoogleApiClient.connect();
+        Log.d("Main Activity", "onResume");
     }
 
     @Override
     public void onConnected(Bundle bundle) {
+        Log.d("Main Activity", "onConnected");
         Wearable.DataApi.addListener(mGoogleApiClient, this);
     }
 
     @Override
     public void onConnectionSuspended(int i) {
+        Log.d("Main Activity", "onConnectionSuspended");
         return;
     }
 
@@ -82,12 +88,17 @@ public class MainActivity extends AppCompatActivity implements
         Log.d("Main Activity", "onDataChanged: " + dataEvents);
 
         for (DataEvent event : dataEvents) {
+
+            Log.d("Main Activity", "Data event: " + DataEvent.TYPE_CHANGED+"  "+event.getType());
             if (event.getType() == DataEvent.TYPE_CHANGED) {
                 // DataItem changed
                 DataItem item = event.getDataItem();
-                if (item.getUri().getPath().compareTo("SENSOR_DATA_PATH") == 0) {
+                Log.d("Main Activity", "Comparisionsss: " + item.getUri().getPath());
+                Log.d("Main Activity", "Comparision: " + item.getUri().getPath().compareTo("/sensor-data"));
+                if (item.getUri().getPath().compareTo("/sensor-data") == 0) {
 
                     DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                   int c= dataMap.getInt("count");
                     float[] values = dataMap.getFloatArray("accelerometer");
 
                     Log.d("Main Activity", "receive sensor data: " + values[0]+" "+values[1]+" "+values[2]);
@@ -101,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 }
             } else if (event.getType() == DataEvent.TYPE_DELETED) {
+                Log.d("Main Activity", "Type Deleted ");
                 // DataItem deleted
             }
         }
@@ -117,11 +129,21 @@ public class MainActivity extends AppCompatActivity implements
             Log.d("MainActivity", "External Storage Not Writable");
             return;
         }
+
         File directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
-        directory.mkdirs();
+
+       if(!directory.exists()) {
+           directory.mkdirs();
+           Log.d("MainActivity", "mkdirs");
+       }
+
         File file = new File(directory, "wearable_data.txt");
+
+        Log.d("MainActivity", "Try creating directory "+directory.getAbsolutePath()+" "+directory.canWrite());
+
         String dataJSON = dataMapAsJSONObject(data).toString() + "\n";
         try {
+            Log.d("MainActivity", "Try writing ");
             FileOutputStream stream = new FileOutputStream(file, true);
             OutputStreamWriter writer = new OutputStreamWriter(stream);
             writer.write(dataJSON);
@@ -151,9 +173,11 @@ public class MainActivity extends AppCompatActivity implements
                 // json.put(key, bundle.get(key)); see edit below
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     json.put(key, JSONObject.wrap(bundle.get(key)));
+                    Log.d("MainActivity", "JSON put");
                 }
             } catch(JSONException e) {
                 //Handle exception here
+                Log.d("MainActivity", "JSON exception");
             }
         }
         return json;

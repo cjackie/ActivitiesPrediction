@@ -25,7 +25,7 @@ public class MainActivity extends Activity implements SensorEventListener{
     private PutDataMapRequest sensorData;
     private static final String SENSOR_DATA_PATH = "/sensor-data";
     private TextView textX, textY, textZ;
-
+    private int count=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,9 +85,12 @@ public class MainActivity extends Activity implements SensorEventListener{
         textZ.setText(" "+values[2]);
 
         sensorData = PutDataMapRequest.create(SENSOR_DATA_PATH);
-        sensorData.getDataMap().putFloatArray("accelerometer", values);
-        sensorData.getDataMap().putInt(key + " Accuracy", event.accuracy);
 
+        sensorData.getDataMap().putFloatArray("accelerometer", values);
+
+        sensorData.getDataMap().putInt("count", count++);
+
+        Log.d("MainActivity", "get counts: "+count);
 
         PutDataRequest request = sensorData.asPutDataRequest();
         Wearable.DataApi.putDataItem(mGoogleApiClient, request);
