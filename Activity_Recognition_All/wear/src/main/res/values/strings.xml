@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Activity_Recognition_All</string>
+    <string name="hello_round">Activity_Recognition</string>
+    <string name="hello_square">Activity_Recognition</string>
+</resources>
