@@ -1,13 +1,11 @@
 package stonybrook.ese.seniordesign.activityrecognition;
 
-import android.content.Intent;
-import android.os.Build;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -16,21 +14,13 @@ import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataItem;
-import com.google.android.gms.wearable.DataMap;
-import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.util.Set;
 
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.AccelerometerDataItem;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.SensorLocalStorage;
+
+
 
 public class MainActivity extends AppCompatActivity implements
         DataApi.DataListener,
@@ -39,17 +29,29 @@ public class MainActivity extends AppCompatActivity implements
 
     public final static String TAG = "ACTIVITY_RECOGNITION_P";
 
-    private TextView mTextX, mTextY, mTextZ;
+    private enum SavingState {
+        STARTED,
+        NOT_STARTED
+    }
+
+    private TextView mTextX;
+    private EditText mLabelText;
+    private Button mStartBtn;
+    private Button mDoneBtn;
     private GoogleApiClient mGoogleApiClient;
     private SensorLocalStorage mStorage;
+    private SavingState mSavingState;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         mTextX = (TextView)findViewById(R.id.textX);
-        mTextY = (TextView)findViewById(R.id.textY);
-        mTextZ = (TextView)findViewById(R.id.textZ);
+        mStartBtn = (Button)findViewById(R.id.startCollect);
+        mDoneBtn = (Button)findViewById(R.id.finishCollect);
+        mLabelText = (EditText)findViewById(R.id.labelText);
+        mSavingState = SavingState.NOT_STARTED;
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
@@ -58,14 +60,27 @@ public class MainActivity extends AppCompatActivity implements
         mGoogleApiClient.registerConnectionFailedListener(this);
 
         mStorage = new SensorLocalStorage(this);
+        mStartBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String label = mLabelText.getText().toString();
+                mStorage.startSaving(label);
+                mSavingState = SavingState.STARTED;
+            }
+        });
+        mDoneBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mStorage.finishSaving();
+                mSavingState = SavingState.NOT_STARTED;
+            }
+        });
     }
 
     protected void onResume() {
         super.onResume();
         mGoogleApiClient.connect();
         mTextX.setText("waiting");
-        mTextY.setText("waiting");
-        mTextZ.setText("waiting");
     }
 
 
@@ -83,6 +98,7 @@ public class MainActivity extends AppCompatActivity implements
     protected void onPause() {
         Wearable.DataApi.removeListener(mGoogleApiClient, this);
         mGoogleApiClient.disconnect();
+        mStorage.flushAll();
         super.onPause();
     }
 
@@ -90,6 +106,10 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
 //        Log.d(TAG, "onDataChanged: " + dataEvents);
+        if (SavingState.STARTED != mSavingState) {
+            // ignore all incoming data.
+            return ;
+        }
 
         for (DataEvent event : dataEvents) {
             DataItem item = event.getDataItem();
@@ -97,8 +117,6 @@ public class MainActivity extends AppCompatActivity implements
                 AccelerometerDataItem accelData = new AccelerometerDataItem();
                 accelData.setData(item.getData());
                 mTextX.setText(accelData.getX()+"");
-                mTextY.setText(accelData.getY()+"");
-                mTextZ.setText(accelData.getZ()+"");
                 mStorage.save(accelData);
             }
         }

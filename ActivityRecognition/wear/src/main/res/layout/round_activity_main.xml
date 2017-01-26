@@ -3,41 +3,34 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.luyu.phoneandwatch.MainActivity"
+    tools:context="stonybrook.ese.seniordesign.activityrecognition.MainActivity"
     tools:deviceIds="wear_round">
 
-    <TextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/hello_round"
-        android:layout_above="@+id/textX"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="30dp" />
-    <TextView
-        android:id="@+id/textX"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:text="x: "
-        android:layout_centerVertical="true"
-        android:layout_alignStart="@+id/text" />
-    <TextView
-        android:id="@+id/textY"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:text="y: "
-        android:layout_below="@+id/textX"
-        android:layout_alignStart="@+id/textX" />
-    <TextView
-        android:id="@+id/textZ"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:text="z: "
-        android:layout_below="@+id/textY"
-        android:layout_alignStart="@+id/textY" />
 
+    <TextView
+        android:text="message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:id="@+id/message"
+        android:layout_below="@+id/state"
+        android:layout_centerHorizontal="true" />
 
+    <ToggleButton
+        android:text="ToggleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:id="@+id/toggleCollect"
+        android:layout_below="@+id/message"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:text="State: unknown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/state"
+        android:layout_marginTop="28dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
 </RelativeLayout>

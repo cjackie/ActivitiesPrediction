@@ -25,11 +25,20 @@ public class SensorDataCollectingService extends Service implements SensorEventL
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     final static String TAG = "ACTIVITY_RECOGNITION_S";
+    final static int SAMPLING_RATE = 20; // in HZ
+
+    public enum SendingState {
+        UNKNOWN,
+        SENDING,
+        NOT_SENDING,
+    }
 
     private GoogleApiClient mGoogleApiClient;
     private SensorManager mSensorManager;
     private Sensor mAccelerameter;
     private Boolean mStarted;
+    private Boolean mGoogleApiConnected;
+    private SendingState mState;
 
     public SensorDataCollectingService() { }
 
@@ -45,16 +54,22 @@ public class SensorDataCollectingService extends Service implements SensorEventL
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerameter = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mStarted = false;
+        mState = SendingState.NOT_SENDING;
+        mGoogleApiConnected = false;
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        mSensorManager.registerListener(this, mAccelerameter, mSensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(this, mAccelerameter, SAMPLING_RATE);
+        mState = SendingState.SENDING;
+        mGoogleApiConnected = true;
     }
 
     @Override
     public void onConnectionSuspended(int i) {
         Log.w(TAG, "google api connection suspended.");
+        mGoogleApiConnected = false;
+        mState = SendingState.NOT_SENDING;
     }
 
     @Override
@@ -109,6 +124,37 @@ public class SensorDataCollectingService extends Service implements SensorEventL
         mStarted = true;
 
         return START_STICKY;
+    }
+
+    public boolean isSendingSensorData() {
+        if (mState == SendingState.SENDING) {
+            return true;
+        } else if (mState == SendingState.NOT_SENDING){
+            return false;
+        } else {
+            throw new RuntimeException("unknow state??");
+        }
+    }
+
+    // @return. indicate the action is successful or not.
+    public boolean pauseSending() {
+        if (mGoogleApiConnected && mState == SendingState.SENDING) {
+            mSensorManager.unregisterListener(this);
+            mState = SendingState.NOT_SENDING;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean resumeSending() {
+        if (mGoogleApiConnected && mState == SendingState.NOT_SENDING) {
+            mSensorManager.registerListener(this, mAccelerameter, mSensorManager.SENSOR_DELAY_NORMAL);
+            mState = SendingState.SENDING;
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

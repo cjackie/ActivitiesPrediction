@@ -2,61 +2,73 @@ package stonybrook.ese.seniordesign.activityrecognition;
 
 import android.app.Activity;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.wearable.view.WatchViewStub;
-import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.PutDataRequest;
-import com.google.android.gms.wearable.Wearable;
-
-
-import stonybrook.ese.seniordesign.activityrecognition.sensordata.AccelerometerDataItem;
 
 public class MainActivity extends Activity implements ServiceConnection {
 
     final static String TAG = "ACTIVITY_RECOGNITION_W";
 
-    private TextView mTextView;
+    private TextView mStateText;
+    private TextView mMessageText;
+    private Button mtoggleCollect;
+    private boolean mLayoutInflated;
     private Boolean mSensorDataCollectingServiceConnected;
     private SensorDataCollectingService mSensorDataCollectingService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mSensorDataCollectingServiceConnected = false;
+        mLayoutInflated = false;
 
         setContentView(R.layout.activity_main);
         final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
         stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
             @Override
             public void onLayoutInflated(WatchViewStub stub) {
-                mTextView = (TextView) stub.findViewById(R.id.text);
-                mTextView.setText("Service for collecting sensor data has started.");
+                mStateText = (TextView) stub.findViewById(R.id.state);
+                mMessageText = (TextView) stub.findViewById(R.id.message);
+                mtoggleCollect = (Button) stub.findViewById(R.id.toggleCollect);
+
+                mStateText.setText("State: not started yet.");
+                mtoggleCollect.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        if (!mSensorDataCollectingServiceConnected) {
+                            mMessageText.setText("service not connected yet with this activity.");
+                            return ;
+                        }
+
+                        if (mSensorDataCollectingService.isSendingSensorData()) {
+                            mSensorDataCollectingService.pauseSending();
+                        } else {
+                            mSensorDataCollectingService.resumeSending();
+                        }
+                        updateStateText();
+                    }
+                });
+
+                mLayoutInflated = true;
             }
         });
         startService(new Intent(this, SensorDataCollectingService.class));
-
-        mSensorDataCollectingServiceConnected = false;
         bindService(new Intent(this, SensorDataCollectingService.class), this, BIND_ABOVE_CLIENT);
-
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (mLayoutInflated){
+            updateStateText();
+        }
     }
 
 
@@ -71,6 +83,16 @@ public class MainActivity extends Activity implements ServiceConnection {
     public void onServiceDisconnected(ComponentName componentName) {
         mSensorDataCollectingServiceConnected = false;
         mSensorDataCollectingService = null;
+    }
+
+    private void updateStateText() {
+        if (!mSensorDataCollectingServiceConnected) {
+            mStateText.setText("State: unknown");
+        } else if (mSensorDataCollectingService.isSendingSensorData()) {
+            mStateText.setText("State: sending");
+        } else {
+            mStateText.setText("State: not sending");
+        }
     }
 }
 
