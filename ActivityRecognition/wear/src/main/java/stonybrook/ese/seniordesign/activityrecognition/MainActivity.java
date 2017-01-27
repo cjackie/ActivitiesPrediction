@@ -38,7 +38,7 @@ public class MainActivity extends Activity implements ServiceConnection {
                 mMessageText = (TextView) stub.findViewById(R.id.message);
                 mtoggleCollect = (Button) stub.findViewById(R.id.toggleCollect);
 
-                mStateText.setText("State: not started yet.");
+                mStateText.setText("State: unkwown.");
                 mtoggleCollect.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -73,10 +73,17 @@ public class MainActivity extends Activity implements ServiceConnection {
 
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        stopService(new Intent(this, SensorDataCollectingService.class));
+    }
+
+    @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
         mSensorDataCollectingServiceConnected = true;
         mSensorDataCollectingService =
                 ((SensorDataCollectingService.SensorDataCollectingServiceLocalBinder)iBinder).getService();
+        updateStateText();
     }
 
     @Override

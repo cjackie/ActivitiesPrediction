@@ -20,6 +20,7 @@ import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.AccelerometerDataItem;
+import stonybrook.ese.seniordesign.activityrecognition.sensordata.GyroscopeDataItem;
 
 public class SensorDataCollectingService extends Service implements SensorEventListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -36,6 +37,7 @@ public class SensorDataCollectingService extends Service implements SensorEventL
     private GoogleApiClient mGoogleApiClient;
     private SensorManager mSensorManager;
     private Sensor mAccelerameter;
+    private Sensor mGyroscope;
     private Boolean mStarted;
     private Boolean mGoogleApiConnected;
     private SendingState mState;
@@ -53,6 +55,7 @@ public class SensorDataCollectingService extends Service implements SensorEventL
         mGoogleApiClient.registerConnectionFailedListener(this);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mAccelerameter = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mGyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         mStarted = false;
         mState = SendingState.NOT_SENDING;
         mGoogleApiConnected = false;
@@ -61,6 +64,7 @@ public class SensorDataCollectingService extends Service implements SensorEventL
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         mSensorManager.registerListener(this, mAccelerameter, SAMPLING_RATE);
+        mSensorManager.registerListener(this, mGyroscope, SAMPLING_RATE);
         mState = SendingState.SENDING;
         mGoogleApiConnected = true;
     }
@@ -80,13 +84,21 @@ public class SensorDataCollectingService extends Service implements SensorEventL
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+
         switch (event.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
-                AccelerometerDataItem item = new AccelerometerDataItem(event.values[0],
+                AccelerometerDataItem accelItem = new AccelerometerDataItem(event.values[0],
                         event.values[1], event.values[2], event.timestamp);
-                PutDataRequest request = PutDataRequest.create(AccelerometerDataItem.PATH);
-                request.setData(item.getData());
-                Wearable.DataApi.putDataItem(mGoogleApiClient, request);
+                PutDataRequest accelRequest = PutDataRequest.create(AccelerometerDataItem.PATH);
+                accelRequest.setData(accelItem.getData());
+                Wearable.DataApi.putDataItem(mGoogleApiClient, accelRequest);
+                break;
+            case Sensor.TYPE_GYROSCOPE:
+                GyroscopeDataItem gyroItem = new GyroscopeDataItem(event.values[0],
+                        event.values[1], event.values[2], event.timestamp);
+                PutDataRequest gyroRequest = PutDataRequest.create(GyroscopeDataItem.PATH);
+                gyroRequest.setData(gyroItem.getData());
+                Wearable.DataApi.putDataItem(mGoogleApiClient, gyroRequest);
                 break;
             default:
         }
@@ -96,7 +108,6 @@ public class SensorDataCollectingService extends Service implements SensorEventL
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
-
 
     // Because this service runs on the same process, other threads can access it:
     //  ((SensorDataCollectingServiceLocalBinder) mBinder).getService() to get the
@@ -116,14 +127,14 @@ public class SensorDataCollectingService extends Service implements SensorEventL
     public int onStartCommand(Intent intent, int flags, int startId) {
         synchronized (mStarted) {
             if (mStarted == true) {
-                return START_STICKY;
+                return START_NOT_STICKY;
             }
         }
 
         mGoogleApiClient.connect();
         mStarted = true;
 
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     public boolean isSendingSensorData() {
@@ -150,6 +161,7 @@ public class SensorDataCollectingService extends Service implements SensorEventL
     public boolean resumeSending() {
         if (mGoogleApiConnected && mState == SendingState.NOT_SENDING) {
             mSensorManager.registerListener(this, mAccelerameter, mSensorManager.SENSOR_DELAY_NORMAL);
+            mSensorManager.registerListener(this, mGyroscope, mSensorManager.SENSOR_DELAY_NORMAL);
             mState = SendingState.SENDING;
             return true;
         } else {
