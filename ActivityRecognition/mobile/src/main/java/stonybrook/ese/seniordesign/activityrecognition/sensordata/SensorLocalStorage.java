@@ -1,6 +1,7 @@
 package stonybrook.ese.seniordesign.activityrecognition.sensordata;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Environment;
 import android.support.v4.util.LogWriter;
 import android.util.Log;
@@ -22,7 +23,10 @@ public class SensorLocalStorage {
     private final String ACCELEROMETER_FILE_NAME_PREFIX = "accelerometer";
     private final String GYROSCOPE_FILE_NAME_PREFIX = "gyroscope";
     private final String LABELS_FILE_NAME = "labels.txt";
+    private final String PREF_NAME = "SENSOR_LOCAL_STORAGE";
+    private final String PREF_COUNTER_NAME = "counter";
 
+    private SharedPreferences pref;
     private File fileDir;
     private FileOutputStream labelsFileStream;
     private int fileCounter;
@@ -31,35 +35,29 @@ public class SensorLocalStorage {
 
     public SensorLocalStorage(Context context) {
         File sdcard = context.getExternalFilesDir(null);
-        File dataDir = new File(sdcard.getAbsolutePath(), STORAGE_DIR);
-        String sdcardState = Environment.getExternalStorageState(dataDir);
+        fileDir = new File(sdcard.getAbsolutePath(), STORAGE_DIR);
+        String sdcardState = Environment.getExternalStorageState(fileDir);
         if (!sdcardState.equals(Environment.MEDIA_MOUNTED)) {
             Log.w(TAG,"the media is not mounted and readable");
+            throw new RuntimeException("the media is not mounted and readable");
         }
-        if (!dataDir.mkdirs()) {
+        if (!fileDir.mkdirs()) {
             Log.w(TAG, "failed to create dir");
         }
 
-        fileDir = dataDir;
-        for (String fn : fileDir.list()) {
-            // delete all existing items.
-            File f = new File(dataDir, fn);  // caution.
-            if (f.isFile()) {
-                f.delete();
-            }
-        }
-
-        File f = new File(dataDir, LABELS_FILE_NAME);
+        pref = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        fileCounter = pref.getInt(PREF_COUNTER_NAME, 0);;
+        // create label file
+        File f = new File(fileDir, LABELS_FILE_NAME);
         try {
-            f.createNewFile();
-            labelsFileStream = new FileOutputStream(f);
+            if (!f.exists()) {
+                f.createNewFile();
+            }
+            labelsFileStream = new FileOutputStream(f, true);
         } catch (IOException e) {
-            // this should not happen, since all files are deleted....
-            // what if a directory with a same name?
             throw new RuntimeException("??");
         }
 
-        fileCounter = 0;
         currentAccelerometerFileStream = null;
         currentGyroscopeFileStream = null;
     }
@@ -84,7 +82,6 @@ public class SensorLocalStorage {
             currentAccelerometerFileStream = new FileOutputStream(accelFile);
             currentGyroscopeFileStream = new FileOutputStream(gyroFile);
 
-            fileCounter++;
             String header = "x,y,z,time\n";
             currentAccelerometerFileStream.write(header.getBytes(StandardCharsets.UTF_8));
             currentGyroscopeFileStream.write(header.getBytes(StandardCharsets.UTF_8));
@@ -92,6 +89,8 @@ public class SensorLocalStorage {
             // writing labels.
             String fileToLabel = "\n" + String.valueOf(fileCounter) + " => " + label;
             labelsFileStream.write(fileToLabel.getBytes(StandardCharsets.UTF_8));
+
+            fileCounter++;
         } catch (Exception error) {
             Log.e(TAG, "fail1");
             throw new RuntimeException(error.toString());
@@ -110,6 +109,7 @@ public class SensorLocalStorage {
             currentGyroscopeFileStream.close();
             currentAccelerometerFileStream = null;
             currentGyroscopeFileStream = null;
+            pref.edit().putInt(PREF_COUNTER_NAME, fileCounter).apply();
         } catch (Exception error) {
             Log.e(TAG, "fail2");
             throw new RuntimeException(error.toString());
