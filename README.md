@@ -1,18 +1,5 @@
 # ActivitiesPrediction
-ESE 440/441 project
-
-# useful adb commands
-```bash
-# Connect wearable:
-adb forward tcp:4444 localabstract:/adb-hub
-adb connect 127.0.0.1:4444
-
-# adb for wearable
-adb -s 127.0.0.1:4444 <command>
-
-# show all packages
-adb shell pm list packages -f
-
-# uninstall
-adb shell pm uninstall -k <package name>
-```
+Senior design project. Our goal is to inference actions users have perform
+for the past 24 hours, using sensor data. 
+- `ActivityRecognition`, android application. it is for collecting data.
+- `Backend`, code related to inference. This will be on a remote server.
