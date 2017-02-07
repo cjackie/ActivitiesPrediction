@@ -13,6 +13,7 @@ config = {
 	'k': 50, 
 	'filter_width': 5, 
 	'pooling_size': 4,
+	'thread_num': 2,
 
 	'accelerometer_restore_path': None,
 	'gyroscope_restore_path': None,
@@ -29,10 +30,12 @@ accelerometer_data, gyroscope_data = process.data(config['time_length'])
 # init model
 accel_basis = MotionBasisLearner(k=config['k'], filter_width=config['filter_width'],
 		pooling_size=config['pooling_size'], save_params_path=config['accelerometer_variable_path'],
-		summary_dir=config['accelerometer_summaries_dir'], param_scope_name=config['accelerometer_variable_path'])
+		summary_dir=config['accelerometer_summaries_dir'], param_scope_name=config['accelerometer_variable_path'],
+		thread_num=config['thread_num'])
 gyro_basis = MotionBasisLearner(k=config['k'], filter_width=config['filter_width'],
 		pooling_size=config['pooling_size'], save_params_path=config['gyroscope_variable_path'],
-		summary_dir=config['gyroscope_summaries_dir'], param_scope_name=config['gyroscope_variable_path'])
+		summary_dir=config['gyroscope_summaries_dir'], param_scope_name=config['gyroscope_variable_path'],
+		thread_num=config['thread_num'])
 
 # init training
 summary_flush_secs = 120

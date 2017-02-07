@@ -3,6 +3,8 @@ import numpy as np
 from scipy import stats
 
 from threading import Thread
+from multiprocessing import Process, Array
+import ctypes
 
 
 
@@ -210,13 +212,14 @@ class MotionBasisLearner():
 
 
     @staticmethod
-    def _h_sampling(convoluted, batch_range, hidden_state, pooling_size):
+    def _h_sampling(convoluted, batch_range, h_shape, pooling_size, share_mem):
         '''
         @convoluted: numpy array. raw numbers.
         @batch_range: list-like int. integers in [batch_range[0], batch_range[1]).
             this is range of batches, where this thread handles
-        @hidden_state: numpy array. where results will be stored. all zeros
+        @h_shape: list like. shape of hidden state
         '''
+        hidden_state = np.zeros(h_shape, dtype=np.int32)
         for batch_i in range(batch_range[0], batch_range[1]):
             for i in range(convoluted.shape[3]):
                 for j in range(convoluted.shape[2]/pooling_size):
@@ -232,6 +235,13 @@ class MotionBasisLearner():
                     else:
                         hidden_state[batch_i,j*pooling_size+h_j,i] = 1
 
+        # update share_mem
+        for batch_i in range(batch_range[0], batch_range[1]):
+            for i in range(h_shape[1]):
+                for j in range(h_shape[2]):
+                        index = batch_i*h_shape[1]*h_shape[2] + i*h_shape[2] + j
+                        share_mem[index] = hidden_state[batch_i, i, j]
+        
     def _gen_h(self, v):
         '''
         @v: tensor
@@ -245,29 +255,47 @@ class MotionBasisLearner():
         thread_num = self.effective_thread_num
         batch_chunks = self.batch_chunks
 
-        # create threads
         convoluted = sess.run(tf.nn.convolution(v, w, 'VALID', strides=[1,1]) + hb)
-        hidden_state = np.zeros(h_shape)
-        threads = []
-        for i in range(thread_num):
-            thread = Thread(target=MotionBasisLearner._h_sampling, args=(convoluted, batch_chunks[i], hidden_state, pooling_size))
-            thread.start()
-            threads.append(thread)
 
-        for thread in threads:
-            thread.join()
+        # share memory
+        share_mem = Array(ctypes.c_long, [123456789]*(h_shape[0]*h_shape[1]*h_shape[2]))
+        # create process
+        processes = []
+        for i in range(thread_num):
+            process = Process(target=MotionBasisLearner._h_sampling, 
+                            args=(convoluted, batch_chunks[i], h_shape, pooling_size, share_mem))
+            process.start()
+            processes.append(process)
+
+        for process in processes:
+            process.join()
+
+        # restore data
+        for item in share_mem:
+            assert item != 123456789 # poor man sanity check
+        hidden_state = np.array(share_mem).reshape(h_shape)
 
         return hidden_state
 
 
     @staticmethod
-    def _v_sampling(convolution_rec, vb, sigma, v_shape, batch_range, visible_state):
+    def _v_sampling(convolution_rec, vb, sigma, v_shape, batch_range, share_mem):
+        visible_state = np.zeros(v_shape, dtype=np.float64)
         for i0 in range(batch_range[0], batch_range[1]):
             for i1 in range(v_shape[1]):
                 for i2 in range(v_shape[2]):
                     for i3 in range(v_shape[3]):
                         mean = convolution_rec[i0,i1,i2,i3] + vb
                         visible_state[i0,i1,i2,i3] = stats.norm.rvs(mean,sigma)
+
+        # update share memory
+        for i0 in range(batch_range[0], batch_range[1]):
+            for i1 in range(v_shape[1]):
+                for i2 in range(v_shape[2]):
+                    for i3 in range(v_shape[3]):
+                        index = i0*v_shape[1]*v_shape[2]*v_shape[3] + i1*v_shape[2]*v_shape[3] + \
+                                    i2*v_shape[3] + i3
+                        share_mem[index] = visible_state[i0,i1,i2,i3]
 
     def _gen_v(self, h, sigma):
         '''
@@ -283,7 +311,6 @@ class MotionBasisLearner():
         thread_num = self.effective_thread_num
         batch_chunks = self.batch_chunks
 
-        visible_state = np.zeros(v_shape)
         # visible_state.fill(np.NAN)
         # convolution related to reconstruction
         h_rec_in_fitted = tf.expand_dims(tf.expand_dims(h, 1), -1)
@@ -293,15 +320,22 @@ class MotionBasisLearner():
         convolution_rec = convolution_rec_raw[:,:,:,:,0] # same shape as `training_data`
         vb = sess.run(vb)
 
-        threads = []
-        for thread_i in range(thread_num):
-            thread = Thread(target=MotionBasisLearner._v_sampling, args=(convolution_rec, vb, sigma, v_shape, 
-                                                        batch_chunks[thread_i], visible_state))
-            thread.start()
-            threads.append(thread)
+        # share memory
+        share_mem = Array(ctypes.c_double, [float('inf')]*v_shape[0]*v_shape[1]*v_shape[2]*v_shape[3]) 
 
-        for thread in threads:
-            thread.join()
+        processes = []
+        for thread_i in range(thread_num):
+            process = Process(target=MotionBasisLearner._v_sampling, args=(convolution_rec, vb, sigma, v_shape, 
+                                                        batch_chunks[thread_i], share_mem))
+            process.start()
+            processes.append(process)
+
+        for process in processes:
+            process.join()
+
+        for item in share_mem:
+            assert item != float('inf') # poor man sanity check.
+        visible_state = np.array(share_mem).reshape(v_shape)
 
         return visible_state
 
