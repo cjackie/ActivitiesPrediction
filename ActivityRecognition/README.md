@@ -13,3 +13,6 @@ adb shell pm list packages -f
 # uninstall
 adb shell pm uninstall -k <package name>
 ```
+
+# TODO
+swtich to React-Native to build mobile app.
