@@ -74,14 +74,14 @@ class MotionBasisLearner():
         h_real_in = tf.placeholder(tf.float32, shape=[batch_size, v_len-filter_width+1, k]) # after full convolution
         v_real_in = tf.placeholder(tf.float32, shape=training_data.shape)
         convolution_real = tf.nn.convolution(v_real_in, w, 'VALID', strides=[1,1])
-        energy_real = -tf.reduce_sum(h_real_in*convolution_real, axis=[1,2,3]) \
+        energy_real = -tf.reduce_sum(h_real_in*tf.squeeze(convolution_real), axis=[1,2]) \
                         - tf.reduce_sum(hb*tf.reduce_sum(h_real_in, axis=[1]), axis=[1]) \
                         - tf.reduce_sum(vb*tf.reduce_sum(v_real_in, axis=[1,2,3]))
         
         h_fantasy_in = tf.placeholder(tf.float32, shape=[batch_size, v_len-filter_width+1, k]) # after full convolution
         v_fantasy_in = tf.placeholder(tf.float32, shape=training_data.shape)
         convolution_fantasy = tf.nn.convolution(v_fantasy_in, w, 'VALID', strides=[1,1])
-        energy_fantasy = -tf.reduce_sum(h_fantasy_in*convolution_fantasy, axis=[1,2,3]) \
+        energy_fantasy = -tf.reduce_sum(h_fantasy_in*tf.squeeze(convolution_fantasy), axis=[1,2]) \
                             - tf.reduce_sum(hb*tf.reduce_sum(h_fantasy_in, axis=[1]), axis=[1]) \
                             - tf.reduce_sum(vb*tf.reduce_sum(v_fantasy_in, axis=[1,2,3]))
 
