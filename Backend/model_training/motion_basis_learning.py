@@ -13,8 +13,9 @@ class MotionBasisLearner():
     input data has to be shape of (m, 3, n, 1), where n is length, and m number of batch.
     for example, accelerometer, 3 represents 3 axis, and n represent time points.
     '''
-    def __init__(self, k=50, filter_width=5, pooling_size=4, axis_num=3, param_scope_name='MotionBasisLearner',
-            save_params_path='./save_variables/params', summary_dir='./summaries/', thread_num = 4):
+    def __init__(self, k=50, filter_width=5, pooling_size=4, axis_num=3, thread_num = 4, 
+            param_scope_name='MotionBasisLearner', save_params_path='./save_variables/params', 
+            summary_dir='./summaries/', accumulated_steps=0):
 
         self.k = k
         self.filter_width = filter_width
@@ -22,7 +23,7 @@ class MotionBasisLearner():
         self.axis_num = axis_num
         self.save_params_path = save_params_path
         self.summary_dir = summary_dir
-        self.accumulated_steps = 0
+        self.accumulated_steps = accumulated_steps
         self.param_scope_name = param_scope_name
         assert thread_num >= 1
         self.thread_num = thread_num # number of thread to run on.
@@ -219,13 +220,25 @@ class MotionBasisLearner():
             this is range of batches, where this thread handles
         @h_shape: list like. shape of hidden state
         '''
+        # assumping 64 bits machine
+        max_exponent = np.log(np.finfo(dtype=np.float64).max) - np.log(pooling_size) - 5
+        assert max_exponent > 2 # poor man sanity check
+
         hidden_state = np.zeros(h_shape, dtype=np.int32)
         for batch_i in range(batch_range[0], batch_range[1]):
             for i in range(convoluted.shape[3]):
                 for j in range(convoluted.shape[2]/pooling_size):
+                    
                     convoluted_j = convoluted[batch_i,0,j*pooling_size:(j+1)*pooling_size,i]
-                    # how to deal with overflow?
-                    prob_not_normalized = np.power(np.e, np.concatenate((convoluted_j, [1]), axis=0)) 
+                    exponents = np.concatenate((convoluted_j, [1]), axis=0)
+
+                    # deal with  potential overflow
+                    possibly_overflow = np.max(exponents) > max_exponent
+                    if possibly_overflow:
+                        offset = np.max(exponents) - max_exponent
+                        exponents = exponents - offset
+
+                    prob_not_normalized = np.power(np.e, exponents) 
                     prob = prob_not_normalized / sum(prob_not_normalized)
                     # h_j = stats.rv_discrete(values=(range(len(prob)), prob)).rvs() # bottle neck.
                     h_j = np.random.choice(range(pooling_size+1), p=prob)
