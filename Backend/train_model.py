@@ -26,7 +26,9 @@ config = {
 
 
 # getting data
-accelerometer_data, gyroscope_data = process.data(config['time_length'])
+shrink_percentage = 1 # a number less than or equal to 1, but greater than 0.
+accelerometer_data, gyroscope_data = process.data(config['time_length'], shrink_percentage=shrink_percentage)
+
 
 # init model
 accel_basis = MotionBasisLearner(k=config['k'], filter_width=config['filter_width'],

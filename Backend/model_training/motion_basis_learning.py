@@ -86,10 +86,10 @@ class MotionBasisLearner():
                             - tf.reduce_sum(hb*tf.reduce_sum(h_fantasy_in, axis=[1]), axis=[1]) \
                             - tf.reduce_sum(vb*tf.reduce_sum(v_fantasy_in, axis=[1,2,3]))
 
-        # to prevent weight "explosion" during learning.
-        data_len = training_data.shape[2]
-        energy_real = energy_real / data_len
-        energy_fantasy = energy_fantasy / data_len
+        # # to prevent weight "explosion" during learning.
+        # data_len = training_data.shape[2]
+        # energy_real = energy_real / data_len
+        # energy_fantasy = energy_fantasy / data_len
 
         # regularization
         reg = tf.reduce_mean(tf.nn.sigmoid(convolution_real + hb))

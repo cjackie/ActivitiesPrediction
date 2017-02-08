@@ -2,7 +2,11 @@ import numpy as np
 import os
 
 
-def data(seq_len, verbose = True):
+def data(seq_len, verbose = True, shrink_percentage=1):
+    '''
+    @shrink_percentage, float. a number between 0 and 1. 
+        only up to two decimal points are considered
+    '''
 
     def get_wrist(tokens):
         time_i = 42
@@ -49,6 +53,14 @@ def data(seq_len, verbose = True):
     ### main ###
     accel_data_container = SeqData(seq_len)
     gyro_data_container = SeqData(seq_len)
+    shrink = False
+    if shrink_percentage > 0 and shrink_percentage < 1:
+        shrink = True
+        percision = 100
+        take_num = int(percision*shrink_percentage)
+        if take_num == 0:
+            take_num = 1 # at least one
+
 
     for i in xrange(1, 11):
         filename = os.path.join(os.path.dirname(__file__), 'Participant_{0}.csv'.format(str(i)))
@@ -63,7 +75,13 @@ def data(seq_len, verbose = True):
 
         raw_data = csv_file.read()
         lines = raw_data.split('\n')
-        for line in lines:
+        for j in range(len(lines)):
+            if shrink and j % percision > take_num:
+                # skipping this item to achieve shrinking.
+                # ---take_num-----,---100-take_num----
+                continue
+
+            line = lines[j]
             tokens = line.split(',')
             try:
                 time, accel, gyro = get_wrist(tokens)
