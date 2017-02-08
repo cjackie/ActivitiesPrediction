@@ -86,10 +86,10 @@ class MotionBasisLearner():
                             - tf.reduce_sum(hb*tf.reduce_sum(h_fantasy_in, axis=[1]), axis=[1]) \
                             - tf.reduce_sum(vb*tf.reduce_sum(v_fantasy_in, axis=[1,2,3]))
 
-        # # to prevent weight "explosion" during learning.
-        # data_len = training_data.shape[2]
-        # energy_real = energy_real / data_len
-        # energy_fantasy = energy_fantasy / data_len
+        # to prevent weight "explosion" during learning.
+        data_len = training_data.shape[2]
+        energy_real = energy_real / data_len
+        energy_fantasy = energy_fantasy / data_len
 
         # regularization
         reg = tf.reduce_mean(tf.nn.sigmoid(convolution_real + hb))
@@ -207,7 +207,8 @@ class MotionBasisLearner():
             if enable_summary:
                 summary_file.add_summary(sess.run(summaries, feed_dict=feed_dict), accumulated_steps+s)
             if enable_save and (accumulated_steps+s) % save_interval == 0:
-                params_saver.save(sess, save_params_path, global_step=accumulated_steps+s)
+                params_saver.save(sess, save_params_path, global_step=accumulated_steps+s, 
+                                    write_meta_graph=False)
 
         self.accumulated_steps += steps
 
