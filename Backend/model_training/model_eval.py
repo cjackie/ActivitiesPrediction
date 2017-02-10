@@ -20,7 +20,7 @@ accel_basis_extractor = DescriptorExtractor(config)
 
 # preparing test data nd training data
 test_percentage = 0.1 # percentage of data being test data.
-accel_data, _ = process.data_labeled(300,verbose=verbose,shrink_percentage=1)
+accel_data, _ = process.data_labeled(100,verbose=verbose,shrink_percentage=1)
 max_samples_num = 0
 for _, data in accel_data.items():
     max_samples_num += data.shape[0]
@@ -29,7 +29,8 @@ train_data, train_labels = np.ones((max_samples_num, config['k'])), ['']*max_sam
 test_data_num = 0
 test_data, test_labels = np.ones((max_samples_num, config['k'])), ['']*max_samples_num
 if verbose:
-    print("loading data:")
+    print("loading data and extracting descriptors:")
+    progress_i = 0
     progress_max = 100 if max_samples_num > 100 else max_samples_num
     progress = [' ']*progress_max
     out = '[{0}]'.format(''.join(progress))
@@ -52,16 +53,16 @@ for label, data in accel_data.items():
             train_data_num += 1
 
         if verbose:
-            progress_made = i % (max_samples_num/progress_max) == 0
-            over_progress = i / (max_samples_num/progress_max) > progress_max
+            progress_made = progress_i % (max_samples_num/progress_max) == 0
+            over_progress = progress_i / (max_samples_num/progress_max) >= progress_max
             if progress_made and not over_progress:
-                progress[i / (max_samples_num/progress_max)] = '#'
+                progress[progress_i / (max_samples_num/progress_max)] = '#'
                 out = '[{0}]'.format(''.join(progress))
                 sys.stdout.write(out+'\r')
                 sys.stdout.flush()
             elif progress_made and not over_progress:
                 print("warning... unexpected.")
-
+            progress_i += 1
 
 train_data, train_labels = train_data[0:train_data_num,:], train_labels[0:train_data_num]
 test_data, test_labels = test_data[0:test_data_num,:], test_labels[0:test_data_num]
