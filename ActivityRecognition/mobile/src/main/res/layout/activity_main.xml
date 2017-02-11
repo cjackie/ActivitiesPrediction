@@ -71,7 +71,7 @@
             android:inputType="text"
             android:ems="10"
             android:id="@+id/CommSendMsgText"
-            android:text="Label" />
+            android:text="Message to send" />
 
         <Button
             android:text="Send"

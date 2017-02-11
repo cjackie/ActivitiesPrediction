@@ -2,9 +2,10 @@ import socket
 from _thread import *
 
 def receive_msg(conn):
-    send_data = "OK"
+    send_data = bytearray("CONNECTED\n".encode())
     try:
-        conn.sendall(send_data.encode())
+        conn.sendall(send_data)
+        print("Sent to client: " + str(send_data))
     except Exception as e:
         print("Send error: " + str(e))
 
@@ -17,6 +18,7 @@ def receive_msg(conn):
             send_data = bytearray("RECEIVED: ".encode())
             send_data.extend(data)
             conn.sendall(send_data)
+            print("Sent to client: " + str(send_data))
         except Exception as e:
             print("Send error: " + str(e))
             break
