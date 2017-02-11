@@ -22,6 +22,11 @@ import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.Wearable;
 
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.net.Socket;
+
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.AccelerometerDataItem;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.GyroscopeDataItem;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.SensorLocalStorage;
@@ -29,7 +34,8 @@ import stonybrook.ese.seniordesign.activityrecognition.sensordata.SensorLocalSto
 
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {
-
+    public final static String SERVER_ADDR = "www.kbumsik.net";
+    public final static int SERVER_PORT = 9999;
     public final static String TAG = "ACTIVITY_RECOGNITION_P";
 
     private TextView mStateText;
@@ -38,11 +44,22 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     private Button mDoneBtn;
     private SensorDataStoringService mServcie;
 
+    // UI for communication
+    private TextView mCommStateText;
+    private EditText mCommSendMsgText;
+    private Button mCommSendBtn;
+    private TextView mCommRecvMsgText;
+    CommTask commTask;
+
+    // Communication component
+    Socket comm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Setting Recording components
         mStateText = (TextView)findViewById(R.id.stateText);
         mStartBtn = (Button)findViewById(R.id.startCollect);
         mDoneBtn = (Button)findViewById(R.id.finishCollect);
@@ -77,6 +94,24 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         mServcie = null;
         startService(new Intent(this, SensorDataStoringService.class));
         bindService(new Intent(this, SensorDataStoringService.class), this, BIND_ABOVE_CLIENT);
+
+        // Setting Comm UI components
+
+        mCommStateText = (TextView)findViewById(R.id.CommStateText);
+        mCommSendMsgText = (EditText) findViewById(R.id.CommSendMsgText);
+        mCommSendBtn = (Button)findViewById(R.id.CommSendMsgBtn);
+        mCommRecvMsgText = (TextView)findViewById(R.id.CommRecvMsgText);
+
+        // Setting Communication components
+
+        mCommSendBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                commTask = new CommTask(SERVER_ADDR, SERVER_PORT, mCommStateText);
+                byte[] buffer = mCommSendMsgText.getText().toString().getBytes();
+                commTask.execute(buffer);
+            }
+        });
     }
 
     protected void onResume() {
