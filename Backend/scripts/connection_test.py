@@ -4,7 +4,7 @@ if __name__ == "__main__":
     # create an INET, STREAMing socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # now connect to the web server on port 80 - the normal http port
-    sock.connect(("127.0.0.1", 9999))
+    sock.connect(("www.kbumsik.net", 9999))
 
     # receive OK
     recv_data = sock.recv(1024)
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # Send
     while True:
         try:
-            send_data = input("Send any data ...")
+            send_data = raw_input("Send any data ...")
             sock.sendall(send_data.encode())
         except Exception as e:
             print("Sending Error: " + str(e))

@@ -1,5 +1,5 @@
 import socket
-from _thread import *
+from thread import *
 
 def receive_msg(conn):
     send_data = bytearray("CONNECTED\n".encode())
