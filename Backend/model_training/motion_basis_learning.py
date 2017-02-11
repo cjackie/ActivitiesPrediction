@@ -41,6 +41,11 @@ class MotionBasisLearner():
         self.sess.run(tf.global_variables_initializer())
 
 
+    def restore_model(self, restore_params_path):
+        sess = self.sess
+        tf.train.Saver().restore(sess, restore_params_path)
+
+
     def build_training_model(self, training_data, restore_params_path=None, enable_save=True, 
                 save_interval=10, enable_summary=True, summary_flush_secs =10):
         '''
@@ -86,10 +91,10 @@ class MotionBasisLearner():
                             - tf.reduce_sum(hb*tf.reduce_sum(h_fantasy_in, axis=[1]), axis=[1]) \
                             - tf.reduce_sum(vb*tf.reduce_sum(v_fantasy_in, axis=[1,2,3]))
 
-        # to prevent weight "explosion" during learning.
-        data_len = training_data.shape[2]
-        energy_real = energy_real / data_len
-        energy_fantasy = energy_fantasy / data_len
+        # # to prevent weight "explosion" during learning.
+        # data_len = training_data.shape[2]
+        # energy_real = energy_real / data_len
+        # energy_fantasy = energy_fantasy / data_len
 
         # regularization
         reg = tf.reduce_mean(tf.nn.sigmoid(convolution_real + hb))
