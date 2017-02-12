@@ -1,0 +1,6 @@
+model_checkpoint_path: "variables-85"
+all_model_checkpoint_paths: "variables-81"
+all_model_checkpoint_paths: "variables-82"
+all_model_checkpoint_paths: "variables-83"
+all_model_checkpoint_paths: "variables-84"
+all_model_checkpoint_paths: "variables-85"

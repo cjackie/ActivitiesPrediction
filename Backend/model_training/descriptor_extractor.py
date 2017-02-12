@@ -1,17 +1,27 @@
 import tensorflow as tf
 import numpy as np
 
+from motion_basis_learning import MotionBasisLearner
+
 class DescriptorExtractor():
 
-	def __init__(self, motion_basis_learned):
+	def __init__(self, config):
 		'''
-		@motion_basis_learned: MotionBasisLearner. MotionBasisLearner 
-			after training is done.
+		@config: dict. has following keys:
+		        `k`: int. model related.
+		        `filter_width`: int. model related.
+		        `pooling_size`: int. model related.
+		        `restore_path`: string. path to parameters.
+		        `param_scope_name`: string. scope name for variables...
 		'''
-		self.w = motion_basis_learned.w
-		self.hb = motion_basis_learned.vb
-		self.axis_num = motion_basis_learned.axis_num
-		self.sess = motion_basis_learned.sess
+		basis_learned = MotionBasisLearner(k=config['k'], filter_width=config['filter_width'], 
+							pooling_size=config['pooling_size'], param_scope_name=config['param_scope_name'])
+		basis_learned.restore_model(config['restore_path'])
+
+		self.w = basis_learned.w
+		self.hb = basis_learned.vb
+		self.axis_num = basis_learned.axis_num
+		self.sess = basis_learned.sess
 
 	def extract_descriptor(self, data):
 		'''
