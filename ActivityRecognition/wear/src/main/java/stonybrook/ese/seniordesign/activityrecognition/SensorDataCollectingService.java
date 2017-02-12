@@ -26,7 +26,6 @@ public class SensorDataCollectingService extends Service implements SensorEventL
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     final static String TAG = "ACTIVITY_RECOGNITION_S";
-    final static int SAMPLING_RATE = 20; // in HZ
 
     public enum SendingState {
         UNKNOWN,
@@ -63,8 +62,8 @@ public class SensorDataCollectingService extends Service implements SensorEventL
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        mSensorManager.registerListener(this, mAccelerameter, SAMPLING_RATE);
-        mSensorManager.registerListener(this, mGyroscope, SAMPLING_RATE);
+        mSensorManager.registerListener(this, mAccelerameter, mSensorManager.SENSOR_DELAY_FASTEST);
+        mSensorManager.registerListener(this, mGyroscope, mSensorManager.SENSOR_DELAY_FASTEST);
         mState = SendingState.SENDING;
         mGoogleApiConnected = true;
     }
