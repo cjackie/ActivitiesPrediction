@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.DataApi;
@@ -30,7 +31,6 @@ import java.net.Socket;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.AccelerometerDataItem;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.GyroscopeDataItem;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.SensorLocalStorage;
-
 
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {
