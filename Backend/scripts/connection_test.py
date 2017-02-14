@@ -6,10 +6,6 @@ if __name__ == "__main__":
     # now connect to the web server on port 80 - the normal http port
     sock.connect(("www.kbumsik.net", 9999))
 
-    # receive OK
-    recv_data = sock.recv(1024)
-    print(recv_data)
-
     # Send
     while True:
         try:
@@ -18,6 +14,9 @@ if __name__ == "__main__":
         except Exception as e:
             print("Sending Error: " + str(e))
         recv_data = sock.recv(1024)
+        if not recv_data:
+            print("Connection closed by the server")
+            break
         print("Received: " + str(recv_data))
 
     sock.close()

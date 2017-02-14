@@ -17,7 +17,9 @@ A reciver is a server that listens the `TCP 9999` port for a sender.
 The sender rqeust connection to the receiver. Opon established, the sender would
 send a `SEND` message to the receiver. Then reciver _MUST_ send either `OK`
 or `ERROR` message back to the sender. After receiving reply, the sender can
-either send another `SEND` messages or disconnect the TCP port.
+either send another `SEND` messages or disconnect the TCP port. If either side
+received an invalid message, one _MUST_ send and ERROR message and close TCP
+connection.
 
 ![procedure](UML/Protocol_sequence.jpg)
 
@@ -29,14 +31,14 @@ payload). The legnth of header _should not_ exceed more than 512 bytes.
 #### `SEND` Message
 
 ```
-SEND <length of payload> <label> [body position] \LF
+SEND <length of payload> <label> [body position]\LF
 <CSV file payload>
 ```
 
 #### `OK` Message
 
 ```
-OK \LF
+OK\LF
 ```
 
 #### `ERROR` Message
