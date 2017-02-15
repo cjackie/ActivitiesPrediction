@@ -28,6 +28,29 @@ def send_ERROR(conn, message):
     pass
 
 def store_msg_to_DB(data):
+    #  label ,pos,time,Ax,Ay,Az,Gx,Gy,Gz,Mx,My,Mz
+    regex = re.compile(r'(.*),(.*),(\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+[-+]?|\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+)')
+
+    # generate objects
+    from db import Data
+    objs = []
+    keys = ('label', 'position', 'timestamp',
+                'ax', 'ay', 'az',
+                'gx', 'gy', 'gz',
+                'mx', 'my', 'mz')
+    for m in regex.finditer(data):
+        i = 1
+        args = {}
+        for key in keys:
+            args[key] = m.group(i)
+            i += 1
+        print(args)
+        obj = Data(**args)
+        objs.append(obj)
+
+    # and then store to the DB
+    for obj in objs:
+        obj.insert()
     return True
 
 def receive_msg(conn):
@@ -72,7 +95,7 @@ def receive_msg(conn):
 
             # receive that amount of data
             while bytes_recd < length:
-                chunk = conn.recv(min(length - bytes_recd, 512))
+                chunk = conn.recv(min(length - bytes_recd, 2048))
                 if chunk == '':
                     raise RuntimeError("socket connection broken")
                 chunks.append(chunk)
