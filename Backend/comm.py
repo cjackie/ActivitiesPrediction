@@ -34,9 +34,10 @@ def receive_msg(conn):
     # Start Loop
     regex = re.compile('[A-Z]+')
     while True:
+        chunks = []
         # Receive header first
         try:
-            data = conn.recv(512)
+            chunk = conn.recv(512)
         except socket.error as e:
             import errno
             if e.errno == errno.ECONNRESET:
@@ -47,20 +48,39 @@ def receive_msg(conn):
                 # Other error, re-raise
                 print("Unknown error. Close socket.")
                 break
-        if not data:
+        if not chunk:
             print("Socket disconnected")
             break
+        bytes_recd = len(chunk)
+        print('{} bytes received').format(bytes_recd)
+        chunks.append(chunk)
         # Get type of message
-        matched = regex.match(data.decode('ascii')[0:])
+        matched = regex.match(chunk.decode('ascii')[0:])
         # If message didn't find match, close the socket
         if not matched:
-            invalid_msg(data)
+            invalid_msg(chunk)
             break
 
         matched = matched.group(0)
         print(str(matched) + " Matched.")
         if matched == "SEND":
             # SEND message
+            # get length of data
+            matched = re.match("SEND (\d+)\n", chunk.decode('ascii')[0:])
+            print("Header length: " + str(len(matched.group(0))) + " Payload length:" + matched.group(1))
+            length = len(matched.group(0)) + int(matched.group(1))  # Header len + payload len
+
+            # receive that amount of data
+            while bytes_recd < length:
+                chunk = conn.recv(min(length - bytes_recd, 512))
+                if chunk == '':
+                    raise RuntimeError("socket connection broken")
+                chunks.append(chunk)
+                bytes_recd = bytes_recd + len(chunk)
+                print('{} bytes received. Total: {}').format(len(chunk), bytes_recd)
+            data = ''.join(chunks)
+            # Store data
+            print(str(data))
             result = store_msg_to_DB(data)
             if result:
                 send_OK(conn)
