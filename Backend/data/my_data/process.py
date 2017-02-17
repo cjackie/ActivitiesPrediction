@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 def get_data(data_raw, start_i, length):
     '''
@@ -119,7 +120,7 @@ def data_labeled_with_time(seq_len, verbose = True, shrink_percentage=1):
         a dict, with key being the label, and item is numpy array of 
         shape [batch_num, 4, seq_len, 1]. for 4, 0->time, 1->x, 2->y, 3->z.
     '''
-    label_file = open('labels.txt', 'r')
+    label_file = open(os.path.join(os.path.dirname(__file__), 'labels.txt'), 'r')
     lines = label_file.read().split('\n')
     label_to_filenames = {} # label => [tuple]. tuple[0] is accelerometer, tuple[1] is gyro
     for line in lines:
@@ -134,7 +135,9 @@ def data_labeled_with_time(seq_len, verbose = True, shrink_percentage=1):
                 print('skip a line: '+line)
             continue
         accel_file = 'accelerometer_{0}.csv'.format(str(file_num))
+        accel_file = os.path.join(os.path.dirname(__file__), accel_file)
         gyro_file = 'gyroscope_{0}.csv'.format(str(file_num))
+        gyro_file = os.path.join(os.path.dirname(__file__), gyro_file)
         label_to_filenames[label].append((accel_file, gyro_file))
 
     # read data from files
