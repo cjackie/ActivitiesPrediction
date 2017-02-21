@@ -5,7 +5,8 @@ import random
 
 import sys
 sys.path.append('../data/')
-from shoaib_data_set import process
+from shoaib_data_set import process as shoaib_process
+from my_data import process as my_process
 
 verbose = True
 config = {
@@ -20,7 +21,7 @@ accel_basis_extractor = DescriptorExtractor(config)
 
 # preparing test data nd training data
 test_percentage = 0.1 # percentage of data being test data.
-accel_data, _ = process.data_labeled(100,verbose=verbose,shrink_percentage=1)
+accel_data, _ = shoaib_process.data_labeled(100,verbose=verbose,shrink_percentage=0.02)
 max_samples_num = 0
 for _, data in accel_data.items():
     max_samples_num += data.shape[0]
@@ -34,8 +35,6 @@ if verbose:
     progress_max = 100 if max_samples_num > 100 else max_samples_num
     progress = [' ']*progress_max
     out = '[{0}]'.format(''.join(progress))
-    sys.stdout.write(out+'\r')
-    sys.stdout.flush()
     sys.stdout.write(out+'\r')
     sys.stdout.flush()
 
@@ -67,6 +66,23 @@ for label, data in accel_data.items():
 train_data, train_labels = train_data[0:train_data_num,:], train_labels[0:train_data_num]
 test_data, test_labels = test_data[0:test_data_num,:], test_labels[0:test_data_num]
 
+# loading my data
+if verbose:
+    print 'loading my data, and creating descriptiors....'
+my_accel_data, _ = my_process.data_labeled(100, verbose=True)
+my_data, my_labels = [], []
+for label, data in my_accel_data.items():
+    my_data_num = data.shape[0]
+    for i in range(my_data_num):
+        descriptor = accel_basis_extractor.extract_descriptor(data[i,:,:,0])
+        my_data.append(descriptor)
+    my_labels.extend([label]*my_data_num)
+
+my_data = np.stack(my_data, axis=0) 
+if verbose:
+    print('finished.')
+
+
 # support vector machine
 if verbose:
     print('training')
@@ -86,4 +102,20 @@ if verbose:
     print("actual labels:")
     print(test_labels)
 print('correct rate is: {0}.'.format(str(float(correct_num)/test_data_num)))
+
+#validate with my data
+print('validation with my data')
+my_result = classifier.predict(my_data)
+my_correct_num = 0
+for i in range(len(my_labels)):
+    if my_result[i] == my_labels[i]:
+        my_correct_num += 1
+if verbose:
+    print('predicted labels:')
+    print(my_result)
+    print('actual labels:')
+    print(my_labels)
+print('correct rate is: {0}.'.format(str(float(my_correct_num)/len(my_labels))))
+
+
 
