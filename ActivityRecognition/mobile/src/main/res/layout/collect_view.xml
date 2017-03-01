@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:id="@+id/collectText"
+        android:layout_height="@dimen/cast_intro_overlay_title_margin_top"
+        android:text="To collect data"
+        android:textSize="24sp"
+        android:textAlignment="center"
+        android:textColor="@color/cast_intro_overlay_background_color"
+        android:background="@color/cast_intro_overlay_button_background_color" />
+
+    <Switch
+        android:text="Enable Upload"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/enableUpload" />
+
+    <Spinner
+        android:layout_width="match_parent"
+        android:id="@+id/labels"
+        android:scrollbarSize="12dp"
+        android:layout_height="@dimen/cast_libraries_material_featurehighlight_text_horizontal_margin"
+        android:dropDownWidth="match_parent" />
+
+    <Button
+        android:text="Collect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/startCollectBtn" />
+
+
+</LinearLayout>

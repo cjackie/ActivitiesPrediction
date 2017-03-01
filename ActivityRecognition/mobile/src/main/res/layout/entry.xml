@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/entry">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:id="@+id/intro"
+        android:layout_height="@dimen/cast_intro_overlay_title_margin_top"
+        android:text="Welcome to activity recognition"
+        android:textSize="24sp"
+        android:textAlignment="center"
+        android:textColor="@color/cast_intro_overlay_background_color"
+        android:background="@color/cast_intro_overlay_button_background_color" />
+
+    <Button
+        android:text="Collect Data"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/collectBtn" />
+
+    <Button
+        android:text="Predict"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/predictBtn" />
+</LinearLayout>

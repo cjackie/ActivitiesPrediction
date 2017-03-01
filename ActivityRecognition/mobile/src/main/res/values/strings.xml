@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Activity Recognition</string>
+
+    <string-array name="labels">
+        <item>Walking</item>
+        <item>Running</item>
+    </string-array>
 </resources>

@@ -21,7 +21,16 @@
         <service
             android:name=".SensorDataStoringService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+
+        <activity android:name=".MainEntry">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".CollectActivity"></activity>
     </application>
 
 </manifest>

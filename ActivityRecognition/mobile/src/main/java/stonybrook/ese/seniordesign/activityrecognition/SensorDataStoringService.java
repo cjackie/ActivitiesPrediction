@@ -31,6 +31,8 @@ public class SensorDataStoringService extends Service implements
     private SensorLocalStorage mStorage;
     private State mState;
     private boolean mStarted;
+    private StringBuilder mCurrentAccelData;
+    private StringBuilder mCurrentGyroData;
 
     public enum State {
         NOT_STARTED,
@@ -54,6 +56,9 @@ public class SensorDataStoringService extends Service implements
         mStorage = new SensorLocalStorage(this.getBaseContext());
         mState = State.NOT_STARTED;
         mStarted = false;
+
+        mCurrentAccelData = new StringBuilder();
+        mCurrentGyroData = new StringBuilder();
     }
 
     public class SensorDataStoringServiceLocalBinder extends Binder {
@@ -86,10 +91,14 @@ public class SensorDataStoringService extends Service implements
             if (item.getUri().getPath().compareTo(AccelerometerDataItem.PATH) == 0) {
                 AccelerometerDataItem accelData = new AccelerometerDataItem();
                 accelData.setData(item.getData());
+                mCurrentAccelData.append(String.format("%1$f,%2$f,%3$f,%4$f\n", accelData.getX(),
+                        accelData.getY(), accelData.getZ(), accelData.getTime()));
                 mStorage.save(accelData);
             } else if (item.getUri().getPath().compareTo(GyroscopeDataItem.PATH) == 0) {
                 GyroscopeDataItem gyroData = new GyroscopeDataItem();
                 gyroData.setData(item.getData());
+                mCurrentAccelData.append(String.format("%1$f,%2$f,%3$f,%4$f\n", gyroData.getX(),
+                        gyroData.getY(), gyroData.getZ(), gyroData.getTime()));
                 mStorage.save(gyroData);
             }
         }
@@ -102,6 +111,9 @@ public class SensorDataStoringService extends Service implements
 
     /** APIs **/
     public void startNewRecord(String label) {
+        mCurrentAccelData = new StringBuilder();
+        mCurrentGyroData = new StringBuilder();
+
         if (State.STORING_DATA == mState) {
             mStorage.finishSaving();
         }
@@ -114,6 +126,14 @@ public class SensorDataStoringService extends Service implements
             mStorage.finishSaving();
         }
         mState = State.DONE_COLLECING;
+    }
+
+    public String getAccelRecord() {
+        return mCurrentAccelData.toString();
+    }
+
+    public String getGyroRecord() {
+        return mCurrentGyroData.toString();
     }
 
     public State getState() {

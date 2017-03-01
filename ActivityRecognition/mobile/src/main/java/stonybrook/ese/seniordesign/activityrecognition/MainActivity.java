@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         mCommSendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                commTask = new CommTask(SERVER_ADDR, SERVER_PORT, mCommStateText, mCommRecvMsgText);
+                commTask = new CommTask(SERVER_ADDR, SERVER_PORT);
                 byte[] buffer = mCommSendMsgText.getText().toString().getBytes();
                 commTask.execute(buffer);
             }

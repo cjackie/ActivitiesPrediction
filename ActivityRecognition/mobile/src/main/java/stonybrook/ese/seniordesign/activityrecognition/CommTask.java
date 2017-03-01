@@ -1,6 +1,7 @@
 package stonybrook.ese.seniordesign.activityrecognition;
 
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
@@ -11,30 +12,28 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Created by kbumsik on 2/10/2017.
  */
 
 public class CommTask extends AsyncTask<byte[], String, Long> {
+
+    public final String TAG = "CommTask";
     private String hostName;
     private int port;
-    private TextView statusText;
-    private TextView recvText;
 
-    public CommTask(String hostName, int port, TextView statusText, TextView recvText)
+    public CommTask(String hostName, int port)
     {
         this.hostName = hostName;
         this.port = port;
-        this.statusText = statusText;
-        this.recvText = recvText;
     }
 
     @Override
     protected void onPreExecute()
     {
-        statusText.setText("Sending...");
-        recvText.setText("");
         super.onPreExecute();
     }
 
@@ -86,23 +85,22 @@ public class CommTask extends AsyncTask<byte[], String, Long> {
     }
 
     @Override
-    protected void onProgressUpdate(String... recvMsg)
-    {
-        String string = recvText.getText().toString() + recvMsg[0];
-        recvText.setText(string);
-    }
-
-    @Override
     protected void onCancelled()
     {
-        statusText.setText("Transmission halted");
+        Log.d(TAG, "Transmission halted");
         super.onCancelled();
     }
 
     @Override
     protected void onPostExecute(Long result)
     {
-        statusText.setText("Transmission completed: " + result + " bytes");
+        Log.d(TAG, "Transmission completed");
         super.onPostExecute(result);
+    }
+
+    // data that is ready to be transmitted
+    static public byte[] format(String accelData, String gyroData) {
+        // TODO format: label ,pos,time,Ax,Ay,Az,Gx,Gy,Gz,Mx,My,Mz
+        return "?,NA,71848364590374.000000,1,1,1,1,1,1,1,1,1\n".getBytes(StandardCharsets.US_ASCII);
     }
 }
