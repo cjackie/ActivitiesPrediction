@@ -3,6 +3,7 @@ package stonybrook.ese.seniordesign.activityrecognition;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,9 +19,11 @@ import android.widget.TextView;
 
 import org.w3c.dom.Text;
 
+import java.util.HashMap;
+
 public class CollectActivity extends AppCompatActivity {
-    public final String SERVER_ADDR = "???"; // TODO
-    public final int SERVER_PORT = 9999;     // TODO
+    public final String SERVER_ADDR = "www.cjackie.net"; // TODO
+    public final int SERVER_PORT = 8000;     // TODO
 
     public final String TAG = "collect_activity";
 
@@ -39,7 +42,7 @@ public class CollectActivity extends AppCompatActivity {
     private boolean enableUpload;
 
     private SensorDataStoringService dataService;
-    private CommTask commTask;
+    private ServiceConnection serviceConn;
 
 
     @Override
@@ -63,11 +66,11 @@ public class CollectActivity extends AppCompatActivity {
 
         getDataService();
         setUpListners();
+        restoreState();
     }
 
     private void getDataService() {
-        startService(new Intent(this, SensorDataStoringService.class));
-        bindService(new Intent(this, SensorDataStoringService.class), new ServiceConnection() {
+        serviceConn = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
                 dataService = ((SensorDataStoringService.SensorDataStoringServiceLocalBinder)iBinder).getService();
@@ -77,7 +80,9 @@ public class CollectActivity extends AppCompatActivity {
             public void onServiceDisconnected(ComponentName componentName) {
                 Log.w(TAG, "service disconnected.");
             }
-        }, BIND_ABOVE_CLIENT);
+        };
+        startService(new Intent(this, SensorDataStoringService.class));
+        bindService(new Intent(this, SensorDataStoringService.class), serviceConn, BIND_ABOVE_CLIENT);
     }
 
     private void setUpListners() {
@@ -172,5 +177,48 @@ public class CollectActivity extends AppCompatActivity {
             collectTextView.setText("???");
             Log.w(TAG, "?");
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    private void restoreState() {
+        SharedPreferences pref = getSharedPreferences(CollectActivity.class.getName(), MODE_PRIVATE);
+
+        // restore the state activity... It is not good...... highly breakable and hard to scale
+        // in implementation complexity.
+        labelSelected = pref.getString("labelSelected", null);
+        labelsDropdown.setSelection(pref.getInt("labelsDropdown", 0));
+        enableUpload = pref.getBoolean("enableUpload", false);
+        enableUploadSwitch.setChecked(enableUpload);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    private void storeState() {
+        SharedPreferences pref = getSharedPreferences(CollectActivity.class.getName(), MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.putString("labelSelected", labelSelected)
+                .putInt("labelsDropdown", labelsDropdown.getSelectedItemPosition())
+                .putBoolean("enableUpload", enableUpload)
+                .apply();
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+
+        if (dataService != null && dataService.getState() == SensorDataStoringService.State.STORING_DATA) {
+            dataService.finishStoring();
+        }
+        this.unbindService(serviceConn);
+
+        storeState();
     }
 }

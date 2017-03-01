@@ -1,6 +1,5 @@
 package stonybrook.ese.seniordesign.activityrecognition;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -30,7 +29,7 @@ public class MainEntry extends AppCompatActivity implements View.OnClickListener
     public void onClick(View view) {
         int id = view.getId();
         if (id == collectBtn.getId()) {
-            startActivity(new Intent());
+            startActivity(new Intent(this, CollectActivity.class));
         } else if (id == predictBtn.getId()) {
             
         } else {

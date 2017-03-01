@@ -17,6 +17,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Created by kbumsik on 2/10/2017.
+ *
+ * modified by chaojie wang
  */
 
 public class CommTask extends AsyncTask<byte[], String, Long> {
