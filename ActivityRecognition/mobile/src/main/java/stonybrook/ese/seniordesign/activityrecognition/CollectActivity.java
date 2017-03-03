@@ -17,12 +17,10 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
-import java.util.HashMap;
+import stonybrook.ese.seniordesign.activityrecognition.sensordata.BackendComm;
 
 public class CollectActivity extends AppCompatActivity {
-    public final String SERVER_ADDR = "www.cjackie.net"; // TODO
+    public final String SERVER_ADDR = "192.168.1.114"; // TODO
     public final int SERVER_PORT = 8000;     // TODO
 
     public final String TAG = "collect_activity";
@@ -43,6 +41,8 @@ public class CollectActivity extends AppCompatActivity {
 
     private SensorDataStoringService dataService;
     private ServiceConnection serviceConn;
+
+    private BackendComm comm;
 
 
     @Override
@@ -67,6 +67,7 @@ public class CollectActivity extends AppCompatActivity {
         getDataService();
         setUpListners();
         restoreState();
+        initComm();
     }
 
     private void getDataService() {
@@ -170,13 +171,17 @@ public class CollectActivity extends AppCompatActivity {
 
             // decide if upload is needed
             if (enableUpload) {
-                CommTask commTask = new CommTask(SERVER_ADDR, SERVER_PORT);
-                commTask.execute(CommTask.format(dataService.getAccelRecord(), dataService.getGyroRecord()));
+                comm.send(dataService.getAccelRecord(), labelSelected);
             }
         } else {
             collectTextView.setText("???");
             Log.w(TAG, "?");
         }
+    }
+
+    private void initComm() {
+        comm = new BackendComm(SERVER_ADDR, SERVER_PORT);
+        comm.start();
     }
 
     @Override

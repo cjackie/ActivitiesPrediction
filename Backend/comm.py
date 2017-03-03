@@ -1,6 +1,57 @@
 import socket
 from thread import *
+from threading import Lock
 import re
+import os
+import sys
+
+
+'''
+depending on data/local_data directory to work.
+create a empty directory to start
+'''
+
+FILE_NUM_PATH = os.path.join(os.path.dirname(__file__), 'data/local_data/file_num')
+LABELS_FILE_PATH = os.path.join(os.path.dirname(__file__), 'data/local_data/labels')
+
+
+file_num = None
+labels_file = None
+local_file_creation_lock = Lock()
+
+
+def init():
+    '''
+    init global variables
+    '''
+    global file_num
+    global labels_file
+
+    if not os.path.isfile(FILE_NUM_PATH):
+        f = open(FILE_NUM_PATH, 'w')
+        f.write('0')
+        f.close()
+        file_num = 0
+        print("initialized local_data directory")
+    else:
+        f = open(FILE_NUM_PATH, 'r')
+        file_num = int(f.read())
+        f.close()
+
+    if not os.path.isfile(LABELS_FILE_PATH):
+        labels_file = open(LABELS_FILE_PATH, 'w')
+    else:
+        labels_file = open(LABELS_FILE_PATH, 'a')
+
+    def _exit():
+        global labels_file
+        global file_num
+
+        labels_file.close()
+        with open(FILE_NUM_PATH, 'w') as f:
+            f.write(str(file_num))
+
+    sys.exitfunc = _exit
 
 
 def invalid_msg(data):
@@ -17,6 +68,15 @@ def send_OK(conn):
     pass
 
 
+def send_LABEL(conn, label):
+    send_data = bytearray('LABEL {0}'.format(label).encode())
+    try:
+        conn.sendall(send_data)
+    except Exception as e:
+        print("Send error: " + str(e))
+    pass
+
+
 def send_ERROR(conn, message):
     message = message.encode()
     send_data = bytearray("ERROR {}\n".format(len(message)).encode())
@@ -26,6 +86,7 @@ def send_ERROR(conn, message):
     except Exception as e:
         print("Send error: " + str(e))
     pass
+
 
 def store_msg_to_DB(data):
     #  label ,pos,time,Ax,Ay,Az,Gx,Gy,Gz,Mx,My,Mz
@@ -56,7 +117,48 @@ def store_msg_to_DB(data):
         obj.insert()
     return True
 
+
+def store_msg_to_local(data, label):
+    global local_file_creation_lock
+    global labels_file
+    global file_num
+
+    local_file_creation_lock.acquire()
+    cur_file_num = file_num
+    file_num += 1
+    accel_file_name = 'data/local_data/accel' + str(cur_file_num) + '.csv'
+    labels_file.write('{0},{1}\n'.format(accel_file_name, label))
+    local_file_creation_lock.release()
+
+    accel_file = open(os.path.join(os.path.dirname(__file__), accel_file_name), "w")
+    # time,Ax,Ay,Az
+    regex = re.compile(r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),'
+                       r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+)')
+    for m in regex.finditer(data):
+        time = m.group(1)
+        x = m.group(2)
+        y = m.group(3)
+        z = m.group(4)
+        accel_file.write('{0},{1},{2},{3}\n'.format(time, x, y, z))
+    accel_file.close()
+
+
+def predict(data):
+    # TODO
+    return 'NA'
+
+
 def receive_msg(conn):
+    '''
+    Two header types are available, and they are in ascii.
+    - SEND [length] [label]
+        time,x,y,z
+        time,x,y,z
+    - PREDICT [length]
+        time,x,y,z
+        time,x,y,z
+    length is the total data size.
+    '''
     # Start Loop
     regex = re.compile('[A-Z]+')
     while True:
@@ -87,14 +189,17 @@ def receive_msg(conn):
             invalid_msg(chunk)
             break
 
+        # getting data
         matched = matched.group(0)
+
         print(str(matched) + " Matched.")
-        if matched == "SEND":
-            # SEND message
+        if matched == "SEND" or matched == 'PREDICT':
             # get length of data
-            matched = re.match("SEND (\d+)\n", chunk.decode('ascii')[0:])
-            print("Header length: " + str(len(matched.group(0))) + " Payload length:" + matched.group(1))
+            matched = re.match("SEND (\d+) ([a-z|A-Z]+)", chunk.decode('ascii')[0:])
+            print("Header length: " + str(len(matched.group(0))) + " Payload length:" + matched.group(1) +
+                  " Label: " + matched.group(2))
             length = len(matched.group(0)) + int(matched.group(1))  # Header len + payload len
+            label = matched.group(2)
 
             # receive that amount of data
             while bytes_recd < length:
@@ -105,25 +210,46 @@ def receive_msg(conn):
                 bytes_recd = bytes_recd + len(chunk)
                 print('{} bytes received. Total: {}').format(len(chunk), bytes_recd)
             data = ''.join(chunks)
+
             # Store data
             print(str(data))
-            result = store_msg_to_DB(data)
-            if result:
-                send_OK(conn)
-            else:
-                send_ERROR(conn, "Something bad in the CSV format")
-            pass
+            store_msg_to_local(data, label)
+            send_OK(conn)
+            break
+
+        elif matched == 'PREDICT':
+            matched = re.match("PREDICT (\d+)", chunk.decode('ascii')[0:])
+            length = len(matched.group(0)) + int(matched.group(1))
+
+             # receive that amount of data
+            while bytes_recd < length:
+                chunk = conn.recv(min(length - bytes_recd, 2048))
+                if chunk == '':
+                    raise RuntimeError("socket connection broken")
+                chunks.append(chunk)
+                bytes_recd = bytes_recd + len(chunk)
+                print('{} bytes received. Total: {}').format(len(chunk), bytes_recd)
+            data = ''.join(chunks)
+
+            # TODO
+            break
+
         else:
             # Close connection otherwise
             send_ERROR(conn, "Bad message. You should send a SEND message")
+            break
+
+
     # End connection
     conn.close()
 
+
 if __name__ == "__main__":
+    init()
     # create an INET, STREAMing socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # bind the socket to a public host, and a well-known port
-    sock.bind(('', 9999))
+    sock.bind(('', 8000))
     # become a server socket
     sock.listen(5)
 

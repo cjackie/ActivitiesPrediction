@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # create an INET, STREAMing socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # now connect to the web server on port 80 - the normal http port
-    sock.connect(("www.kbumsik.net", 9999))
+    sock.connect(("0.0.0.0", 8000))
 
     import sys
     if len(sys.argv) is 1:
