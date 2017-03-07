@@ -3,10 +3,8 @@ from sklearn import svm
 import numpy as np
 import random 
 
-import sys
-sys.path.append('../data/')
-from shoaib_data_set import process as shoaib_process
-from my_data import process as my_process
+from ..data.shoaib_data_set import process as shoaib_process
+from ..data.my_data import process as my_process
 
 verbose = True
 config = {
