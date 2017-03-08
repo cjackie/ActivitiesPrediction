@@ -126,7 +126,7 @@ def store_msg_to_local(data, label):
     local_file_creation_lock.acquire()
     cur_file_num = file_num
     file_num += 1
-    accel_file_name = 'data/local_data/accel' + str(cur_file_num) + '.csv'
+    accel_file_name = 'accel' + str(cur_file_num) + '.csv'
     labels_file.write('{0},{1}\n'.format(accel_file_name, label))
     local_file_creation_lock.release()
 

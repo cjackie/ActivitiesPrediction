@@ -123,7 +123,7 @@ public class SensorLocalStorage {
         }
 
         String entry = String.format("%1$f,%2$f,%3$f,%4$f\n",
-                item.getX(), item.getY(), item.getZ(), item.getTime());
+                item.getTime(), item.getX(), item.getY(), item.getZ());
         try {
             currentAccelerometerFileStream.write(entry.getBytes(StandardCharsets.UTF_8));
             return true;
@@ -139,7 +139,7 @@ public class SensorLocalStorage {
         }
 
         String entry = String.format("%1$f,%2$f,%3$f,%4$f\n",
-                item.getX(), item.getY(), item.getZ(), item.getTime());
+                item.getTime(), item.getX(), item.getY(), item.getZ());
         try {
             currentGyroscopeFileStream.write(entry.getBytes(StandardCharsets.UTF_8));
             return true;

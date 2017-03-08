@@ -47,8 +47,9 @@ def get_default_model(verbose=False):
                                      'variables_saved/accel/variables-69'), # path to parameters
         'param_scope_name': 'variables_saved/accel/variables'
     }
-    data_process_script = 'data.shoaib_data_set.process'
+    data_process_script = 'data.local_data.process'
     shrink_percentage = 0.04
+    seq_len = 60
 
     # start initialization
     # preparing data
@@ -56,7 +57,7 @@ def get_default_model(verbose=False):
         print('loading data...')
     accel_basis = DescriptorExtractor(basis_config)
     process = import_module(data_process_script)
-    accel_data, _ = process.data_labeled(120, verbose=verbose, shrink_percentage=shrink_percentage)
+    accel_data, _ = process.data_labeled(seq_len, verbose=verbose, shrink_percentage=shrink_percentage)
     data = []
     labels = []
     for label, a_data in accel_data.items():
