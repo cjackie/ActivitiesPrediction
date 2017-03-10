@@ -2,8 +2,9 @@ import numpy as np
 import os
 import re
 
+PERIOD = 0.02  # in seconds
 
-def _interpolate2(seq, period):
+def interpolate2(seq, period):
     '''
 
     :seq: np array of shape (n, 4). where seq[:,0], is time(unit second) in
@@ -38,6 +39,8 @@ def data_labeled(seq_len, verbose = True, shrink_percentage=1):
 
     # getting all label to filenames mapping.
     label_file_path = os.path.join(os.path.dirname(__file__), 'labels.txt')
+    if not os.path.isfile(label_file_path):
+        raise Exception('data not available')
     label_to_filenames = {} # label => filenames. accelerometer,
     with open(label_file_path, 'r') as f:
         _raw = f.read()
@@ -70,7 +73,7 @@ def data_labeled(seq_len, verbose = True, shrink_percentage=1):
             _data = np.array(_data)
             if _data.shape[0] > 0:
                 # interpolate
-                _data = _interpolate2(_data, 0.02)  # 50HZ
+                _data = interpolate2(_data, PERIOD)
 
             if _data.shape[0] > seq_len:
                 _batch_num = int(_data.shape[0]/seq_len)
