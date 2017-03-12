@@ -38,7 +38,7 @@ def data_labeled(seq_len, verbose = True, shrink_percentage=1):
     '''
 
     # getting all label to filenames mapping.
-    label_file_path = os.path.join(os.path.dirname(__file__), 'labels.txt')
+    label_file_path = os.path.join(os.path.dirname(__file__), 'labels')
     if not os.path.isfile(label_file_path):
         raise Exception('data not available')
     label_to_filenames = {} # label => filenames. accelerometer,

@@ -56,6 +56,18 @@ class _Model():
     def basis_config(self):
         return self.__basis_config.copy()
 
+    @staticmethod
+    def empty_model():
+        class EmptyModel:
+            def predict_with_time(self, data):
+                return 'NA'
+
+            @property
+            def basis_config(self):
+                return {}
+
+        EmptyModel()
+
 
 # model
 def get_default_model(verbose=False):
@@ -84,12 +96,15 @@ def get_default_model(verbose=False):
             data.append(accel_basis.extract_descriptor(a_data[i,:,:,0]))
             labels.append(label)
 
-    # train model with the data
-    if verbose:
-        print('training...')
-    svm_model = svm.SVC()                  # we use simple support vector machine
-    svm_model.fit(data, labels)
+    if len(data) == 0:
+        return _Model.empty_model()
+    else:
+        # train model with the data
+        if verbose:
+            print('training...')
+        svm_model = svm.SVC()                  # we use simple support vector machine
+        svm_model.fit(data, labels)
 
-    return _Model(svm_model, basis_config, accel_basis, seq_len)
+        return _Model(svm_model, basis_config, accel_basis, seq_len)
 
 

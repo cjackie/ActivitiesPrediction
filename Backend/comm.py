@@ -15,6 +15,8 @@ create a empty directory to start
 
 FILE_NUM_PATH = os.path.join(os.path.dirname(__file__), 'data/local_data/file_num')
 LABELS_FILE_PATH = os.path.join(os.path.dirname(__file__), 'data/local_data/labels')
+# let it be x. it means for every x data file created, the model is rebuilt.
+REBUILD_MODEL_MAGIC_NUM = 10
 
 
 file_num = None
@@ -22,7 +24,10 @@ labels_file = None
 local_file_creation_lock = Lock()
 
 my_model_lock = Lock()
+file_num_for_model = None
 my_model = None
+
+verbose = True
 
 
 def init():
@@ -48,7 +53,9 @@ def init():
         labels_file = open(LABELS_FILE_PATH, 'a')
 
     global my_model
+    global file_num_for_model
     my_model = get_default_model(True)
+    file_num_for_model = file_num
 
     def _exit():
         global labels_file
@@ -95,34 +102,17 @@ def send_ERROR(conn, message):
     pass
 
 
-def store_msg_to_DB(data):
-    #  label ,pos,time,Ax,Ay,Az,Gx,Gy,Gz,Mx,My,Mz
-    regex = re.compile(r'(.*),(.*),(\d+),'
-        r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),'
-        r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),'
-        r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+)')
+def maybe_rebuild_model():
+    global file_num_for_model
+    global file_num
+    global my_model
+    global my_model_lock
 
-    # generate objects
-    from db import Data
-    objs = []
-    keys = ('label', 'position', 'timestamp',
-                'ax', 'ay', 'az',
-                'gx', 'gy', 'gz',
-                'mx', 'my', 'mz')
-    for m in regex.finditer(data):
-        i = 1
-        args = {}
-        for key in keys:
-            args[key] = m.group(i)
-            i += 1
-        print(args)
-        obj = Data(**args)
-        objs.append(obj)
-
-    # and then store to the DB
-    for obj in objs:
-        obj.insert()
-    return True
+    my_model_lock.acquire()
+    if file_num != file_num_for_model and file_num % REBUILD_MODEL_MAGIC_NUM == 0:
+        my_model = get_default_model()
+        file_num_for_model = file_num
+    my_model_lock.release()
 
 
 def store_msg_to_local(data, label):
@@ -137,7 +127,7 @@ def store_msg_to_local(data, label):
     labels_file.write('{0},{1}\n'.format(accel_file_name, label))
     local_file_creation_lock.release()
 
-    accel_file = open(os.path.join(os.path.dirname(__file__), accel_file_name), "w")
+    accel_file = open(os.path.join(os.path.dirname(__file__), 'data/local_data/'+accel_file_name), "w")
     # time,Ax,Ay,Az
     regex = re.compile(r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+),'
                        r'([-+]?\d*\.\d+|[-+]?\d+),([-+]?\d*\.\d+|[-+]?\d+)')
@@ -180,12 +170,15 @@ def predict(data):
         return 'NA'
 
     global my_model
-
-    # from nano sec to sec
-    data_np[:,0] = data_np[:,0] / 1000000000
-
-    return my_model.predict_with_time(data_np)
-
+    my_model_lock.acquire()
+    try:
+        # from nano sec to sec
+        data_np[:,0] = data_np[:,0] / 1000000000
+        return my_model.predict_with_time(data_np)
+    except Exception as e:
+        return 'NA'
+    finally:
+        my_model_lock.release()
 
 
 def receive_msg(conn):
@@ -198,32 +191,22 @@ def receive_msg(conn):
         time,x,y,z
         time,x,y,z
     length is the total data size.
+    :exception: from sockets
     '''
     # Start Loop
     regex = re.compile('[A-Z]+')
     while True:
         chunks = []
         # Receive header first
-        try:
-            chunk = conn.recv(512)
-        except socket.error as e:
-            import errno
-            if e.errno == errno.ECONNRESET:
-                # Handle disconnection
-                print("Socket is reset ungracefully by the client. Close socket.")
-                break
-            else:
-                # Other error, re-raise
-                print("Unknown error. Close socket.")
-                break
-        if not chunk:
+        chunk = conn.recv(512)
+        if chunk == '':
             print("Socket disconnected")
             break
         bytes_recd = len(chunk)
         print('{} bytes received').format(bytes_recd)
         chunks.append(chunk)
         # Get type of message
-        matched = regex.match(chunk.decode('ascii')[0:])
+        matched = regex.match(chunk.decode('ascii'))
         # If message didn't find match, close the socket
         if not matched:
             invalid_msg(chunk)
@@ -235,7 +218,7 @@ def receive_msg(conn):
         print(str(matched) + " Matched.")
         if matched == "SEND":
             # get length of data
-            matched = re.match("SEND (\d+) ([a-z|A-Z]+)", chunk.decode('ascii')[0:])
+            matched = re.match("SEND (\d+) ([a-z|A-Z]+)", chunk.decode('ascii'))
             print("Header length: " + str(len(matched.group(0))) + " Payload length:" + matched.group(1) +
                   " Label: " + matched.group(2))
             length = len(matched.group(0)) + int(matched.group(1))  # Header len + payload len
@@ -249,12 +232,14 @@ def receive_msg(conn):
                 chunks.append(chunk)
                 bytes_recd = bytes_recd + len(chunk)
                 print('{} bytes received. Total: {}').format(len(chunk), bytes_recd)
-            data = ''.join(chunks)
+            data = ''.join(chunks).decode('ascii')
 
             # Store data
-            print(str(data))
+            if verbose:
+                print(str(data))
             store_msg_to_local(data, label)
             send_OK(conn)
+            maybe_rebuild_model()
             break
 
         elif matched == 'PREDICT':
@@ -270,7 +255,7 @@ def receive_msg(conn):
                 chunks.append(chunk)
                 bytes_recd = bytes_recd + len(chunk)
                 print('{} bytes received. Total: {}').format(len(chunk), bytes_recd)
-            data = ''.join(chunks)
+            data = ''.join(chunks).decode('ascii')
 
             label = predict(data)
             send_LABEL(conn, label)
