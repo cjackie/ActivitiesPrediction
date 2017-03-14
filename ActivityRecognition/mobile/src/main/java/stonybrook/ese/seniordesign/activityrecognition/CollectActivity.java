@@ -20,8 +20,6 @@ import android.widget.TextView;
 import stonybrook.ese.seniordesign.activityrecognition.sensordata.BackendComm;
 
 public class CollectActivity extends AppCompatActivity {
-    public final String SERVER_ADDR = "192.168.1.114"; // TODO
-    public final int SERVER_PORT = 8000;     // TODO
 
     public final String TAG = "collect_activity";
 
@@ -62,11 +60,17 @@ public class CollectActivity extends AppCompatActivity {
         enableUploadSwitch.setChecked(false);
         enableUpload = false;
 
+        // set dropdowns
+        ArrayAdapter<CharSequence> labelsAdapter = ArrayAdapter.createFromResource(this,
+                R.array.labels, android.R.layout.simple_spinner_item);
+        labelsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        labelsDropdown.setAdapter(labelsAdapter);
+
         dataService = null;
 
         getDataService();
         setUpListners();
-        restoreState();
+        restoreFromPref();
         initComm();
     }
 
@@ -82,7 +86,6 @@ public class CollectActivity extends AppCompatActivity {
                 Log.w(TAG, "service disconnected.");
             }
         };
-        startService(new Intent(this, SensorDataStoringService.class));
         bindService(new Intent(this, SensorDataStoringService.class), serviceConn, BIND_ABOVE_CLIENT);
     }
 
@@ -94,12 +97,6 @@ public class CollectActivity extends AppCompatActivity {
                 enableUpload = isChecked;
             }
         });
-
-        // set dropdowns
-        ArrayAdapter<CharSequence> labelsAdapter = ArrayAdapter.createFromResource(this,
-                R.array.labels, android.R.layout.simple_spinner_item);
-        labelsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        labelsDropdown.setAdapter(labelsAdapter);
 
         labelsDropdown.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -180,8 +177,27 @@ public class CollectActivity extends AppCompatActivity {
     }
 
     private void initComm() {
-        comm = new BackendComm(SERVER_ADDR, SERVER_PORT);
+        comm = new BackendComm();
         comm.start();
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedState) {
+        super.onRestoreInstanceState(savedState);
+        if (savedState != null) {
+            labelSelected = savedState.getString("labelSelected", null);
+            labelsDropdown.setSelection(savedState.getInt("labelsDropdown", 0));
+            enableUpload = savedState.getBoolean("enableUpload", false);
+            enableUploadSwitch.setChecked(enableUpload);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("labelSelected", labelSelected);
+        state.putInt("labelsDropdown", labelsDropdown.getSelectedItemPosition());
+        state.putBoolean("enableUpload", enableUpload);
     }
 
     @Override
@@ -189,30 +205,9 @@ public class CollectActivity extends AppCompatActivity {
         super.onResume();
     }
 
-    private void restoreState() {
-        SharedPreferences pref = getSharedPreferences(CollectActivity.class.getName(), MODE_PRIVATE);
-
-        // restore the state activity... It is not good...... highly breakable and hard to scale
-        // in implementation complexity.
-        labelSelected = pref.getString("labelSelected", null);
-        labelsDropdown.setSelection(pref.getInt("labelsDropdown", 0));
-        enableUpload = pref.getBoolean("enableUpload", false);
-        enableUploadSwitch.setChecked(enableUpload);
-    }
-
     @Override
     public void onPause() {
         super.onPause();
-    }
-
-    private void storeState() {
-        SharedPreferences pref = getSharedPreferences(CollectActivity.class.getName(), MODE_PRIVATE);
-        SharedPreferences.Editor editor = pref.edit();
-
-        editor.putString("labelSelected", labelSelected)
-                .putInt("labelsDropdown", labelsDropdown.getSelectedItemPosition())
-                .putBoolean("enableUpload", enableUpload)
-                .apply();
     }
 
     @Override
@@ -224,6 +219,29 @@ public class CollectActivity extends AppCompatActivity {
         }
         this.unbindService(serviceConn);
 
-        storeState();
+        saveToPref();
     }
+
+    private void restoreFromPref() {
+        SharedPreferences pref = getSharedPreferences(CollectActivity.class.getName(), MODE_PRIVATE);
+
+        // restore the state activity... It is not good...... highly breakable and hard to scale
+        // in implementation complexity.
+        labelSelected = pref.getString("labelSelected", null);
+        labelsDropdown.setSelection(pref.getInt("labelsDropdown", 0));
+        enableUpload = pref.getBoolean("enableUpload", false);
+        enableUploadSwitch.setChecked(enableUpload);
+    }
+
+    private void saveToPref() {
+        SharedPreferences pref = getSharedPreferences(CollectActivity.class.getName(), MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+
+        editor.putString("labelSelected", labelSelected)
+                .putInt("labelsDropdown", labelsDropdown.getSelectedItemPosition())
+                .putBoolean("enableUpload", enableUpload)
+                .apply();
+    }
+
+
 }

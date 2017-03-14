@@ -23,6 +23,8 @@ public class MainEntry extends AppCompatActivity implements View.OnClickListener
 
         collectBtn.setOnClickListener(this);
         predictBtn.setOnClickListener(this);
+
+        startService(new Intent(this, SensorDataStoringService.class));
     }
 
     @Override
@@ -31,7 +33,7 @@ public class MainEntry extends AppCompatActivity implements View.OnClickListener
         if (id == collectBtn.getId()) {
             startActivity(new Intent(this, CollectActivity.class));
         } else if (id == predictBtn.getId()) {
-            
+            startActivity(new Intent(this, PredictActivity.class));
         } else {
             Log.d(TAG, "onClick: unexpected");
         }

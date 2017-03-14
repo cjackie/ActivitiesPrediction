@@ -2,7 +2,17 @@
     <string name="app_name">Activity Recognition</string>
 
     <string-array name="labels">
-        <item>Walking</item>
-        <item>Running</item>
+        <item>walk</item>
+        <item>run</item>
+        <item>sit</item>
+        <item>curl-up</item>
+    </string-array>
+
+    <string-array name="timeFrames">
+        <item>1 second</item>
+        <item>2 seconds</item>
+        <item>4 seconds</item>
+        <item>10 seconds</item>
+        <item>30 seconds</item>
     </string-array>
 </resources>

@@ -15,31 +15,32 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.FutureTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by chaojiewang on 3/2/17.
  */
 
 public class BackendComm extends HandlerThread {
+    public static final String SERVER_ADDR = "192.168.0.106"; // TODO
+    public static final int SERVER_PORT = 8000;     // TODO
+
+    public interface PredictionReadyCallback {
+        void callback(String label);
+    }
+
     private Handler handler;
 
     public final String TAG = "BackendComm";
-    private String hostName;
-    private int port;
+    private ArrayDeque<byte[]> accelDataLabeled;
     // global variable for @predict method.. not good....
     private String accelDataForPrediction;
-    private ArrayDeque<byte[]> accelDataLabeled;
+    PredictionReadyCallback predictionCallback;
+    private String predictedLabel;
 
-    public BackendComm(String hostName, int port) {
+    public BackendComm() {
         super("BackendComm");
-        this.hostName = hostName;
-        this.port = port;
         accelDataLabeled = new ArrayDeque<>();
     }
 
@@ -56,34 +57,51 @@ public class BackendComm extends HandlerThread {
 
     // TODO
     // @return, null on result not available.
-    synchronized public String predict(String accelData) {
+    synchronized public void predict(String accelData, PredictionReadyCallback cb) {
         accelDataForPrediction = accelData;
-        Future<String> label = new FutureTask<String>(new Callable<String>() {
+        predictionCallback = cb;
+        handler.post(new Runnable() {
             @Override
-            public String call() throws Exception {
-                byte[] bytes = accelDataForPrediction.getBytes();
-                long result = 0;
-                byte[] input = new byte[1024];
+            public void run() {
+                // TODO
+                String label = "NA";
+
+                String data = String.format("PREDICT %d \n", accelDataForPrediction.length());
+                data = data + accelDataForPrediction;
+                byte[] formattedData = data.getBytes(StandardCharsets.US_ASCII);
                 Socket sock = null;
                 try {
                     // Connect
-                    InetAddress inet = InetAddress.getByName(hostName);
-                    sock = new Socket(inet, port);
+                    InetAddress inet = InetAddress.getByName(SERVER_ADDR);
+                    sock = new Socket(inet, SERVER_PORT);
 
                     // get stream
                     OutputStream outputStream = sock.getOutputStream();
                     InputStream inputStream = sock.getInputStream();
 
                     // Send
-                    outputStream.write(bytes);
+                    outputStream.write(formattedData);
 
-                    // wait for return
-                    inputStream.read(input);
+                    // Read
+                    byte[] inBuffer = new byte[1024];
+                    int byteLength = inputStream.read(inBuffer);
+                    String inData = new String(inBuffer, 0, byteLength, StandardCharsets.US_ASCII);
+                    Pattern labelPattern = Pattern.compile("(LABEL) (.+)");
+                    Matcher matcher = labelPattern.matcher(inData);
+                    if (matcher.matches()) {
+                        if (matcher.groupCount() >= 2) {
+                            predictionCallback.callback(matcher.group(2));
+                        } else {
+                            Log.w(TAG, "unexpected group counts???");
+                            predictionCallback.callback("NA");
+                        }
+                    } else {
+                        Log.w(TAG, "does not recognize the prediction result from the server: " + inData);
+                        predictionCallback.callback("NA");
+                    }
 
 
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
                     if (sock != null) {
@@ -94,15 +112,8 @@ public class BackendComm extends HandlerThread {
                         }
                     }
                 }
-                return null;
             }
         });
-
-        try {
-            return label.get(5, TimeUnit.SECONDS);
-        } catch (Exception err) {
-            return null;
-        }
     }
 
     private void sendBytes(byte[] data) {
@@ -127,8 +138,8 @@ public class BackendComm extends HandlerThread {
                 Socket sock = null;
                 try {
                     // Connect
-                    InetAddress inet = InetAddress.getByName(hostName);
-                    sock = new Socket(inet, port);
+                    InetAddress inet = InetAddress.getByName(SERVER_ADDR);
+                    sock = new Socket(inet, SERVER_PORT);
 
                     // get stream
                     OutputStream outputStream = sock.getOutputStream();

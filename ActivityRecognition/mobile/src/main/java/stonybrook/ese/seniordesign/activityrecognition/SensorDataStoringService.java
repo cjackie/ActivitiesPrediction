@@ -91,14 +91,14 @@ public class SensorDataStoringService extends Service implements
             if (item.getUri().getPath().compareTo(AccelerometerDataItem.PATH) == 0) {
                 AccelerometerDataItem accelData = new AccelerometerDataItem();
                 accelData.setData(item.getData());
-                mCurrentAccelData.append(String.format("%1$f,%2$f,%3$f,%4$f\n", accelData.getX(),
-                        accelData.getY(), accelData.getZ(), accelData.getTime()));
+                mCurrentAccelData.append(String.format("%1$f,%2$f,%3$f,%4$f\n", accelData.getTime(),
+                        accelData.getX(), accelData.getY(), accelData.getZ()));
                 mStorage.save(accelData);
             } else if (item.getUri().getPath().compareTo(GyroscopeDataItem.PATH) == 0) {
                 GyroscopeDataItem gyroData = new GyroscopeDataItem();
                 gyroData.setData(item.getData());
-                mCurrentAccelData.append(String.format("%1$f,%2$f,%3$f,%4$f\n", gyroData.getX(),
-                        gyroData.getY(), gyroData.getZ(), gyroData.getTime()));
+                mCurrentAccelData.append(String.format("%1$f,%2$f,%3$f,%4$f\n", gyroData.getTime(),
+                        gyroData.getX(), gyroData.getY(), gyroData.getZ()));
                 mStorage.save(gyroData);
             }
         }
