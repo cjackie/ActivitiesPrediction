@@ -16,7 +16,7 @@ create a empty directory to start
 FILE_NUM_PATH = os.path.join(os.path.dirname(__file__), 'data/local_data/file_num')
 LABELS_FILE_PATH = os.path.join(os.path.dirname(__file__), 'data/local_data/labels')
 # let it be x. it means for every x data file created, the model is rebuilt.
-REBUILD_MODEL_MAGIC_NUM = 10
+REBUILD_MODEL_MAGIC_NUM = 5
 
 
 file_num = None
@@ -54,7 +54,7 @@ def init():
 
     global my_model
     global file_num_for_model
-    my_model = get_default_model(True)
+    my_model = get_default_model(verbose)
     file_num_for_model = file_num
 
     def _exit():
@@ -66,6 +66,15 @@ def init():
             f.write(str(file_num))
 
     sys.exitfunc = _exit
+
+def flush_labels_and_file_num():
+    global labels_file
+    global file_num
+
+    labels_file.flush()
+    os.fsync(labels_file.fileno())
+    with open(FILE_NUM_PATH, 'w') as f:
+        f.write(str(file_num))
 
 
 def invalid_msg(data):
@@ -103,6 +112,10 @@ def send_ERROR(conn, message):
 
 
 def maybe_rebuild_model():
+    '''
+    FIXME updated model seems not visible to new requests(threads)
+    :return:
+    '''
     global file_num_for_model
     global file_num
     global my_model
@@ -110,7 +123,10 @@ def maybe_rebuild_model():
 
     my_model_lock.acquire()
     if file_num != file_num_for_model and file_num % REBUILD_MODEL_MAGIC_NUM == 0:
-        my_model = get_default_model()
+        if verbose:
+            print('rebuiding model at {0}'.format(file_num))
+        flush_labels_and_file_num() # needed for get_default_model to take new data.
+        my_model = get_default_model(verbose)
         file_num_for_model = file_num
     my_model_lock.release()
 

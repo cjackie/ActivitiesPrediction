@@ -77,11 +77,11 @@ def get_default_model(verbose=False):
         'filter_width': 5,
         'pooling_size': 4,
         'restore_path': os.path.join(os.path.dirname(__file__),
-                                     'variables_saved/accel/variables-69'), # path to parameters
+                                     'variables_saved/accel/variables-357'), # path to parameters
         'param_scope_name': 'variables_saved/accel/variables'
     }
-    shrink_percentage = 0.04
-    seq_len = 60
+    shrink_percentage = 1
+    seq_len = 120
 
     # start initialization
     # preparing data
